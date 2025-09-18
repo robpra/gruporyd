@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Telefonia</title>
+  <script>
+    // Escuchar mensajes de la página principal
+      window.addEventListener("message", (event) => {
+      console.log("Mensaje recibido en index.html:", event.data);
+
+      // Responder al padre
+      if (window.opener) {
+        window.opener.postMessage("Recibí tu mensaje: " + event.data, "*");
+      }
+    });
+
+    // Enviar mensaje manual al padre
+    function responder() {
+      if (window.opener) {
+        window.opener.postMessage("Hola desde la ventana flotante", "*");
+      }
+    }
+  </script>
+</head>
+<body>
+  <h1>Ventana Flotante</h1>
+  <button onclick="responder()">Responder a la principal</button>
+</body>
+</html>

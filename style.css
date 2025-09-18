@@ -1,0 +1,187 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+.page-content {
+    height: 200vh; /* Para forzar el scroll y ver que el botÃ³n se mantiene fijo */
+}
+
+/* --- Estilos del BotÃ³n Flotante --- */
+
+
+.chat-toggler {
+    position: fixed;
+    top: 10px;       /* separación desde arriba */
+    right: 20px;     /* separación desde la derecha */
+    background-color: #007bff; /* color de fondo (podés cambiarlo) */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+.chat-toggler1 {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+}
+
+.chat-toggler .close-icon {
+    display: none; /* Oculto por defecto */
+}
+
+/* --- Estilos de la Ventana del Chat --- */
+
+.chat-widget {
+    position: fixed;
+    top: 90px;              /* justo debajo del botón */
+    right: 20px;
+    width: 320px;
+    max-height: 500px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 999;
+    /* Animación */
+    transform: scaleY(0);
+    transform-origin: top right;
+    transition: transform 0.3s ease-in-out;
+}
+
+
+.chat-widget1 {
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    width: 350px;
+    max-height: 500px;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 999;
+    
+    /* Efecto de transiciÃ³n */
+    transform: scale(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Clase para mostrar/ocultar */
+.chat-widget.open {
+    transform: scaleY(1);
+}
+
+
+
+/* Clase para mostrar/ocultar */
+.chat-widget.open1 {
+    transform: scale(1);
+}
+.chat-toggler.open .material-icons {
+    display: none; /* Oculta el Ã­cono de chat */
+}
+.chat-toggler.open .close-icon {
+    display: block; /* Muestra el Ã­cono de cerrar */
+}
+
+
+/* --- Estilos internos del Chat --- */
+.chat-header {
+    background-color: red;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    height: 5px;
+}
+
+.chat-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+}
+
+.chat-header p {
+    margin: 5px 0 0;
+    font-size: 0.8em;
+    opacity: 0.9;
+}
+
+.chat-body {
+    flex-grow: 1;
+    padding: 0px;
+    overflow-y: auto;
+    background-color: #f9f9f9;
+    width: 360px;
+    height: 800px;
+}
+
+.message {
+    margin-bottom: 15px;
+    max-width: 80%;
+    padding: 10px 15px;
+    border-radius: 20px;
+    line-height: 1.4;
+}
+
+.bot-message {
+    background-color: #e9e9eb;
+    color: #333;
+    align-self: flex-start;
+}
+
+.user-message {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto; /* Alinea a la derecha */
+}
+
+.chat-footer {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ddd;
+    background-color: #fff;
+}
+
+.chat-footer input {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 10px 15px;
+    outline: none;
+}
+
+.chat-footer .send-btn {
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    padding: 0 10px;
+}

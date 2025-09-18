@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Widget Telefónico</title>
+    <!-- Tailwind CSS para un diseño rápido y moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome para el ícono del teléfono -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <template id="widget-template">
+        <!-- The Phone -->
+        <div id=Phone></div>
+    </template>
+
+ 
+    <button id="open-widget-btn" class="fixed top-8 right-8 bg-green-600 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:bg-green-700 transition-transform transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-green-300 z-50">
+        <i class="fas fa-phone fa-lg"></i>
+    </button>
+
+    <!-- Contenedor del Widget Flotante (inicialmente oculto) -->
+    <div id="widget-container" class="fixed bottom-4 right-4 hidden z-40">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm h-[75vh] min-h-[500px] flex flex-col overflow-hidden">
+            <!-- Encabezado del Widget (arrastrable) -->
+            <div id="widget-header" class="flex justify-between items-center p-2 border-b bg-gray-100 rounded-t-2xl cursor-move">
+                 <button id="close-widget-btn" class="text-gray-500 hover:text-gray-800 p-2"></button>
+            </div>
+            <!-- Contenedor para el iframe del widget -->
+            <div id="iframe-container" style="border-style: none;width: 100%; height: 100%;">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const openWidgetBtn = document.getElementById('open-widget-btn');
+        const closeWidgetBtn = document.getElementById('close-widget-btn');
+        const widgetContainer = document.getElementById('widget-container');
+        const widgetHeader = document.getElementById('widget-header');
+        const iframeContainer = document.getElementById('iframe-container');
+        let widgetIframe = null;
+
+        // Función para mostrar/ocultar el widget
+        const toggleWidget = () => {
+            // Si el iframe no existe, lo creamos la primera vez
+            if (!widgetIframe) {
+                const template = document.getElementById('widget-template');
+                const widgetHtml = template.innerHTML;
+                
+                widgetIframe = document.createElement('iframe');
+                widgetIframe.style.width = '100%';
+                widgetIframe.style.height = '100%';
+                widgetIframe.style.border = 'none';
+                
+                widgetIframe.srcdoc = widgetHtml;
+                iframeContainer.appendChild(widgetIframe);
+            }
+            
+            // Alterna la clase 'hidden' para mostrar u ocultar
+            widgetContainer.classList.toggle('hidden');
+        };
+
+        // Event Listeners para los botones
+        openWidgetBtn.addEventListener('click', toggleWidget);
+        closeWidgetBtn.addEventListener('click', toggleWidget);
+
+        // --- Lógica para arrastrar el widget ---
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        const onMouseDown = (e) => {
+            // Solo arrastrar con el botón izquierdo del mouse
+            if (e.button !== 0) return;
+            
+            isDragging = true;
+            
+            // Coordenadas iniciales del mouse relativas al widget
+            offsetX = e.clientX - widgetContainer.offsetLeft;
+            offsetY = e.clientY - widgetContainer.offsetTop;
+
+            // Desactivar la selección de texto mientras se arrastra
+            document.body.style.userSelect = 'none';
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        };
+
+        const onMouseMove = (e) => {
+            if (!isDragging) return;
+
+            // Calcula la nueva posición del widget
+            let newX = e.clientX - offsetX;
+            let newY = e.clientY - offsetY;
+            
+            // Asegurarse que el widget no se salga de la pantalla
+            const containerRect = widgetContainer.getBoundingClientRect();
+            newX = Math.max(0, Math.min(newX, window.innerWidth - containerRect.width));
+            newY = Math.max(0, Math.min(newY, window.innerHeight - containerRect.height));
+
+            widgetContainer.style.left = `${newX}px`;
+            widgetContainer.style.top = `${newY}px`;
+            // Eliminar posicionamiento 'bottom' y 'right' para que 'top' y 'left' funcionen
+            widgetContainer.style.bottom = 'auto';
+            widgetContainer.style.right = 'auto';
+        };
+
+        const onMouseUp = () => {
+            isDragging = false;
+            
+            // Reactivar la selección de texto
+            document.body.style.userSelect = '';
+
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        widgetHeader.addEventListener('mousedown', onMouseDown);
+    </script>
+</body>
+</html>
+
