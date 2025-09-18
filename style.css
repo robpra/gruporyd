@@ -13,7 +13,7 @@ body {
 
 .chat-toggler {
     position: fixed;
-    top: 10px;       /* separación desde arriba */
+    top: 20px;       /* separación desde arriba */
     right: 20px;     /* separación desde la derecha */
     background-color: #007bff; /* color de fondo (podés cambiarlo) */
     color: white;
@@ -54,27 +54,8 @@ body {
 
 /* --- Estilos de la Ventana del Chat --- */
 
+
 .chat-widget {
-    position: fixed;
-    top: 90px;              /* justo debajo del botón */
-    right: 20px;
-    width: 320px;
-    max-height: 500px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    z-index: 999;
-    /* Animación */
-    transform: scaleY(0);
-    transform-origin: top right;
-    transition: transform 0.3s ease-in-out;
-}
-
-
-.chat-widget1 {
     position: fixed;
     bottom: 100px;
     right: 30px;
@@ -135,12 +116,11 @@ body {
 }
 
 .chat-body {
-    flex-grow: 1;
-    padding: 0px;
-    overflow-y: auto;
-    background-color: #f9f9f9;
-    width: 360px;
-    height: 800px;
+   padding-left: 0px;
+   padding-right: 0px;
+   width: 360px;
+   height: 800px;
+
 }
 
 .message {
