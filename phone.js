@@ -3002,24 +3002,32 @@ function onInviteAccepted(lineObj, includeVideo, response){
         // Call Control
         $("#line-"+ lineObj.LineNumber +"-btn-Mute").show();
         $("#line-"+ lineObj.LineNumber +"-btn-Unmute").hide();
+
         $("#line-"+ lineObj.LineNumber +"-btn-start-recording").show();
         $("#line-"+ lineObj.LineNumber +"-btn-stop-recording").hide();
+
         $("#line-"+ lineObj.LineNumber +"-btn-Hold").show();
         $("#line-"+ lineObj.LineNumber +"-btn-Unhold").hide();
+
         $("#line-"+ lineObj.LineNumber +"-btn-Transfer").show();
         $("#line-"+ lineObj.LineNumber +"-btn-CancelTransfer").hide();
+
         $("#line-"+ lineObj.LineNumber +"-btn-Conference").show();
         $("#line-"+ lineObj.LineNumber +"-btn-CancelConference").hide();
+
         $("#line-"+ lineObj.LineNumber +"-btn-ShowDtmf").show();
         $("#line-"+ lineObj.LineNumber +"-btn-settings").show();
+
         $("#line-"+ lineObj.LineNumber +"-btn-ShowCallStats").show();
         $("#line-"+ lineObj.LineNumber +"-btn-HideCallStats").hide();
+
         $("#line-"+ lineObj.LineNumber +"-btn-ShowTimeline").show();
         $("#line-"+ lineObj.LineNumber +"-btn-HideTimeline").hide();
         $("#line-"+ lineObj.LineNumber +"-btn-present-src").hide();
         $("#line-"+ lineObj.LineNumber +"-btn-expand").hide();
         $("#line-"+ lineObj.LineNumber +"-btn-restore").hide();
         $("#line-"+ lineObj.LineNumber +"-btn-End").show();
+
         // Show the Call
         $("#line-" + lineObj.LineNumber + "-ActiveCall").show();
     }
@@ -9137,11 +9145,12 @@ function AddLineHtml(lineObj, direction){
         html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-start-recording\" onclick=\"StartRecording('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.start_call_recording +"\"><i class=\"fa fa-dot-circle-o\"></i></button>";
         html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-stop-recording\" onclick=\"StopRecording('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.stop_call_recording +"\" style=\"color: red; display:none\"><i class=\"fa fa-circle\"></i></button>";
     }
-    // Conference
+    /* RRR  Conference
     if(EnableConference){
         html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Conference\" onclick=\"StartConferenceCall('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.conference_call +"\"><i class=\"fa fa-users\"></i></button>";
         html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-CancelConference\" onclick=\"CancelConference('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.cancel_conference +"\" style=\"color: red; display:none\"><i class=\"fa fa-users\"></i></button>";
     }
+    */
     if(direction == "outbound"){
         // Transfer (Audio Only)
         if(EnableTransfer){
@@ -9155,13 +9164,14 @@ function AddLineHtml(lineObj, direction){
     // Settings
     html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-settings\" onclick=\"ChangeSettings('"+ lineObj.LineNumber +"', this)\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.device_settings +"\"><i class=\"fa fa-volume-up\"></i></button>";
     // Present
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-present-src\" onclick=\"ShowPresentMenu(this, '"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.camera +"\"><i class=\"fa fa-video-camera\"></i></button>";
+    // RRR html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-present-src\" onclick=\"ShowPresentMenu(this, '"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.camera +"\"><i class=\"fa fa-video-camera\"></i></button>";
     // Call Stats
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-ShowCallStats\" onclick=\"ShowCallStats('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.call_stats +"\"><i class=\"fa fa-area-chart\"></i></button>";
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-HideCallStats\" onclick=\"HideCallStats('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.call_stats +"\" style=\"color: red; display:none\"><i class=\"fa fa-area-chart\"></i></button>";
+    // RRR html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-ShowCallStats\" onclick=\"ShowCallStats('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.call_stats +"\"><i class=\"fa fa-area-chart\"></i></button>";
+    // RRR html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-HideCallStats\" onclick=\"HideCallStats('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.call_stats +"\" style=\"color: red; display:none\"><i class=\"fa fa-area-chart\"></i></button>";
+   
     // Call Timeline
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-ShowTimeline\" onclick=\"ShowCallTimeline('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.activity_timeline +"\"><i class=\"fa fa-list-ul\"></i></button>";
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-HideTimeline\" onclick=\"HideCallTimeline('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.activity_timeline +"\" style=\"color: red; display:none\"><i class=\"fa fa-list-ul\"></i></button>";
+    // RRR html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-ShowTimeline\" onclick=\"ShowCallTimeline('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.activity_timeline +"\"><i class=\"fa fa-list-ul\"></i></button>";
+    // RRR html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-HideTimeline\" onclick=\"HideCallTimeline('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.activity_timeline +"\" style=\"color: red; display:none\"><i class=\"fa fa-list-ul\"></i></button>";
 
     html += "</div>"; // More Buttons Row
     html += "</div>"; // .CallControl
