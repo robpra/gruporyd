@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        select, input {
+            width: 250px;
+            padding: 5px;
+            margin-top: 5px;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f3f3f3;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+    <script src="phone.js"></script>
+    <script>cargarInternos();</script>
+</head>
+<body>
+    <h2>Login</h2>
+    <label>Usuario</label>
+    <input type="text" id="usuario" value="rprado">
+
+    <label>Nombre completo:</label>
+    <input type="text" id="nombre" value="Robert Prado">
+
+    <label>Id de agente:</label>
+    <input type="text" id="agente" value="2001">
+
+    <label>Seleccionar interno:</label>
+    <select id="interno"></select>
+
+    <button onclick="registrarAgente()">Enviar a PBX</button>
+
+    <pre id="resultado"></pre>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Login PBX WebRTC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:36px;line-height:1.45}
+    .card{max-width:720px;margin:auto;border:1px solid #e5e7eb;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{display:block;margin:.5rem 0 .25rem}
+    input{width:100%;padding:.6rem;border:1px solid #d1d5db;border-radius:8px}
+    button{margin-top:16px;padding:.75rem 1rem;border:0;border-radius:10px;cursor:pointer;background:#111827;color:#fff}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Login PBX – Teléfono WebRTC</h1>
+    <div class="row">
+      <div><label>Usuario SIP</label><input id="usuario" value="3150" /></div>
+      <div><label>Nombre</label><input id="nombre" value="Juan Pérez" /></div>
+    </div>
+    <div class="row">
+      <div><label>Agente</label><input id="agente" value="1001" /></div>
+      <div><label>Interno</label><input id="interno" value="3150" /></div>
+    </div>
+    <div class="row">
+      <div><label>Servidor WSS</label><input id="wssServer" value="pbx.ryd" /></div>
+      <div><label>Puerto WSS</label><input id="wsPort" value="8089" /></div>
+    </div>
+    <div class="row">
+      <div><label>Dominio SIP</label><input id="sipDomain" value="pbx.ryd" /></div>
+      <div><label>Contraseña SIP</label><input id="sipPassword" value="3150PSW" /></div>
+    </div>
+    <button id="enviarAPBX">Enviar a PBX</button>
+  </div>
+
+  <script>
+  document.getElementById('enviarAPBX').addEventListener('click', () => {
+    const payload = {
+      resultado: "ok",
+      login: {
+        usuario:       document.getElementById('usuario').value.trim(),
+        nombre:        document.getElementById('nombre').value.trim(),
+        agente:        document.getElementById('agente').value.trim(),
+        interno:       document.getElementById('interno').value.trim(),
+        wssServer:     document.getElementById('wssServer').value.trim(),
+        WebSocketPort: document.getElementById('wsPort').value.trim(),
+        SipDomain:     document.getElementById('sipDomain').value.trim(),
+        SipUsername:   document.getElementById('usuario').value.trim(),
+        SipPassword:   document.getElementById('sipPassword').value.trim()
+      }
+    };
+    const hash = encodeURIComponent(JSON.stringify(payload));
+    window.location.href = `index.html#pbxLogin=${hash}`;
+  });
+  </script>
+</body>
+</html>

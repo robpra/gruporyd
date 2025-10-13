@@ -188,11 +188,11 @@ body {
 }
 .dialButtonsDial{
     color: #FFFFFF;
-    background-color: #25962f;
+    background-color: #6b6fe5;
 }
 .dialButtonsDial:hover{
     color: #FFFFFF;
-    background-color: #44ad4d;
+    background-color: red;
 }
 .dialButtonsDial:active{
     color: #FFFFFF;
@@ -200,11 +200,11 @@ body {
 }
 .dialButtonsDial:disabled{
     color: #666666;
-    background-color: #25962f;
+    background-color: #6b6fe5;
 }
 .dialButtonsDial:disabled:hover{
     color: #666666;
-    background-color: #25962f;
+    background-color: #6b6fe5;
 }
 
 .hangupButton {

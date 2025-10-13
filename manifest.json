@@ -1,24 +1,24 @@
 {
-    "name": "Browser Phone",
-    "short_name": "Browser Phone",
-    "id": "com.innovateasterisk.browserphone",
+    "name": "WebRTC- Grupo RYD",
+    "short_name": "WebRTC- Grupo RYD",
+    "id": "portal.gruporyd.net",
     "start_url": "index.html",
     "display": "standalone",
     "background_color": "#fff",
     "theme_color": "#f6f6f6",
-    "description": "Browser Phone is a fully featured browser based WebRTC SIP phone for Asterisk. Designed to work with Asterisk PBX.",
+    "description": "WebRTC SIP phone for Davinci.",
     "screenshots": [
         {
             "src": "icons/screenshot1.webp",
             "type": "image/webp",
             "sizes": "2542x1860",
-            "label": "Innovate Asterisk"
+            "label": "Grupo RYD"
         },
         {
             "src": "icons/screenshot2.webp",
             "type": "image/webp",
             "sizes": "2542x1860",
-            "label": "Innovate Asterisk"
+            "label": "Grupo RYD"
         }
     ],
     "icons": [

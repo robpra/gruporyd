@@ -6,22 +6,15 @@ const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.u
 const instanceID = String(Date.now());
 const localDB = window.localStorage;
 
-// Set the following to null to disable
-let welcomeScreen = "<div class=\"UiWindowField\"><pre style=\"font-size: 12px\">";
-welcomeScreen += "================================ GRUPO RYD =================================\n";
-welcomeScreen += "============================================================================\n</pre>";
-welcomeScreen += "</div>";
+// Global API INTEGRACION - CRM: 
+const apiInternos = "https://pbx.ryd/api/ari/status-phones.php";
+const apiRegistro = "https://pbx.ryd/api/ari/registerAgent.php";
 
-/**
- * Language Packs (lang/xx.json)
- * Note: The following should correspond to files on your server. 
- * eg: If you list "fr" then you need to add the file "fr.json".
- * Use the "en.json" as a template.
- * More specific language must be first. ie: "zh-hans" should be before "zh".
- * "en.json" is always loaded by default
- */
-let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); // Enables searching and loading for the additional language packs other thAan /en.json
-const availableLang = ["fr", "ja", "zh-hans", "zh", "ru", "tr", "nl", "es", "de", "pl", "pt-br"]; // Defines the language packs (.json) available in /lang/ folder
+// ===============
+
+
+let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); 
+const availableLang = ["es", "en", "pt-br"]; 
 
 /**
  * Image Assets
@@ -310,7 +303,7 @@ function GetAlternateLanguage(){
 
     for(l = 0; l < availableLang.length; l++){
         if(userLanguage.indexOf(availableLang[l].toLowerCase()) == 0){
-            console.log("Alternate Language detected: ", userLanguage);
+            // RRR-LOG console.log("Alternate Language detected: ", userLanguage);
             // Set up Moment with the same language settings
             moment.locale(userLanguage);
             return availableLang[l].toLowerCase();
@@ -451,13 +444,15 @@ $(document).ready(function () {
     // Even if the setting is defined on the database, these variables get loaded after.
 
     var options = (typeof phoneOptions !== 'undefined')? phoneOptions : {};
-    if(options.welcomeScreen !== undefined) welcomeScreen = options.welcomeScreen;
+
     if(options.loadAlternateLang !== undefined) loadAlternateLang = options.loadAlternateLang;
     if(options.profileName !== undefined) profileName = options.profileName;
+    
     if(options.imagesDirectory !== undefined) imagesDirectory = options.imagesDirectory;
     if(options.defaultAvatars !== undefined) defaultAvatars = options.defaultAvatars;
     if(options.wallpaperLight !== undefined) wallpaperLight = options.wallpaperLight;
     if(options.wallpaperDark !== undefined) wallpaperDark = options.wallpaperDark;
+
     if(options.wssServer !== undefined) wssServer = options.wssServer;
     if(options.WebSocketPort !== undefined) WebSocketPort = options.WebSocketPort;
     if(options.ServerPath !== undefined) ServerPath = options.ServerPath;
@@ -465,6 +460,7 @@ $(document).ready(function () {
     if(options.SipUsername !== undefined) SipUsername = options.SipUsername;
     if(options.SipPassword !== undefined) SipPassword = options.SipPassword;
     if(options.SingleInstance !== undefined) SingleInstance = options.SingleInstance;
+
     if(options.TransportConnectionTimeout !== undefined) TransportConnectionTimeout = options.TransportConnectionTimeout;
     if(options.TransportReconnectionAttempts !== undefined) TransportReconnectionAttempts = options.TransportReconnectionAttempts;
     if(options.TransportReconnectionTimeout !== undefined) TransportReconnectionTimeout = options.TransportReconnectionTimeout;
@@ -562,15 +558,25 @@ $(document).ready(function () {
     if(options.XmppRealmSeparator !== undefined) XmppRealmSeparator = options.XmppRealmSeparator;
     if(options.XmppChatGroupService !== undefined) XmppChatGroupService = options.XmppChatGroupService;
 
+   
+
     // Single Instance Check 
     if(SingleInstance == true){
         console.log("Instance ID :", instanceID);
         // First we set (or try to set) the instance ID
         localDB.setItem("InstanceId", instanceID);
 
-        // Now we attach a listener
+     // Add New Message
+    var newMessageJson = {
+        clave: "InstanceId",
+        valor: instanceID
+    }
+	
+       // Now we attach a listener
         window.addEventListener('storage', onLocalStorageEvent, false);
     }
+
+    
 
     // Load Language File
     // ==================
@@ -580,17 +586,16 @@ $(document).ready(function () {
         if(loadAlternateLang == true){
             var userLang = GetAlternateLanguage();
             if(userLang != ""){
-                console.log("Loading Alternate Language Pack: ", userLang);
-                $.getJSON(hostingPrefix +"lang/"+ userLang +".json", function (alt_data){
+                  $.getJSON(hostingPrefix +"lang/"+ userLang +".json", function (alt_data){
                     if(typeof web_hook_on_language_pack_loaded !== 'undefined') web_hook_on_language_pack_loaded(alt_data);
                     lang = alt_data;
                 }).always(function() {
-                    console.log("Alternate Language Pack loaded: ", lang);
+                    // RRR-LOG console.log("Alternate Language Pack loaded: ", lang);
                     InitUi();
                 });
             }
             else {
-                console.log("No Alternate Language Found.");
+                // RRR-LOG console.log("No Alternate Language Found.");
                 InitUi();
             }
         }
@@ -601,24 +606,13 @@ $(document).ready(function () {
 });
 if(window.matchMedia){
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e){
-        console.log(`Changed system Theme to: ${e.matches ? "dark" : "light"} mode`)
+        // RRR-LOG console.log(`Changed system Theme to: ${e.matches ? "dark" : "light"} mode`)
         ApplyThemeColor()
     });
 }
 function onLocalStorageEvent(event){
     if(event.key == "InstanceId"){
-        // Another script is writing to the local storage,
-        // because the event lister is attached after the 
-        // Instance ID, its from another window/tab/script.
-
-        // Because you cannot change focus to another tab (even
-        // from a tab with the same domain), and because you cannot
-        // close a tab, the best we can do is de-register this
-        // UserAgent, so that we are only registered here.
-
         Unregister();
-        // TOO: what if you re-register?
-        // Should this unload the entire page, what about calls? 
     }
 }
 function PrepareIndexDB(){
@@ -766,15 +760,15 @@ function UpdateUI(){
 
         if(selectedBuddy == null & selectedLine == null) {
             // Nobody Selected (SHow Only Left Table)
-            $("#rightContent").show();
+            //RRR $("#rightContent").show();
 
-            $("#leftContent").css("width", "80%");
+            $("#leftContent").css("width", "100%");
             $("#leftContent").show();
         }
         else {
             // Nobody Selected (SHow Only Buddy / Line)
-            $("#rightContent").css("margin-left", "290px");
-            $("#rightContent").show();
+           // RRR  $("#rightContent").css("margin-left", "290px");
+           // RRR $("#rightContent").show();
 
             $("#leftContent").hide();
             
@@ -784,16 +778,16 @@ function UpdateUI(){
     else {
         // Wide Screen Layout
         if(selectedBuddy == null & selectedLine == null) {
-            $("#leftContent").css("width", "80%");
-            $("#rightContent").css("margin-left", "290px");
+            $("#leftContent").css("width", "100%");
+            // RRR $("#rightContent").css("margin-left", "290px");
             $("#leftContent").show();
-            $("#rightContent").hide();
+            // RRR $("#rightContent").hide();
         }
         else{
-            $("#leftContent").css("width", "80%");
-            $("#rightContent").css("margin-left", "290px");
+            $("#leftContent").css("width", "100%");
+            // RRR $("#rightContent").css("margin-left", "290px");
             $("#leftContent").show();
-            $("#rightContent").show();
+            // RRR $("#rightContent").show();
 
             if(selectedBuddy != null) updateScroll(selectedBuddy.identity);
         }
@@ -890,6 +884,8 @@ function UpdateUI(){
 // UI Windows
 // ==========
 function AddSomeoneWindow(numberStr){
+
+
     CloseUpSettings();
 
     $("#myContacts").hide();
@@ -1136,7 +1132,6 @@ function AddSomeoneWindow(numberStr){
             localDB.setItem(profileUserID + "-Buddies", JSON.stringify(json));
 
             UpdateBuddyList();
-
             ShowContacts();
         }
     });
@@ -1368,21 +1363,21 @@ function EditBuddyWindow(buddy){
         $("#ImageCanvas").croppie('result', constraints).then(function(base64) {
             // Image processing done
             if(buddyJson.Type == "extension"){
-                console.log("Saving image for extension buddy:", buddyJson.uID)
+                // RRR-LOG console.log("Saving image for extension buddy:", buddyJson.uID)
                 localDB.setItem("img-"+ buddyJson.uID +"-extension", base64);
                 // Update Images
                 $("#contact-"+ buddyJson.uID +"-picture").css("background-image", 'url('+ getPicture(buddyJson.uID, 'extension', true) +')');
                 $("#contact-"+ buddyJson.uID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.uID, 'extension', true) +')');
             }
             else if(buddyJson.Type == "contact") {
-                console.log("Saving image for contact buddy:", buddyJson.cID)
+                // RRR-LOG console.log("Saving image for contact buddy:", buddyJson.cID)
                 localDB.setItem("img-"+ buddyJson.cID +"-contact", base64);
                 // Update Images
                 $("#contact-"+ buddyJson.cID +"-picture").css("background-image", 'url('+ getPicture(buddyJson.cID, 'contact', true) +')');
                 $("#contact-"+ buddyJson.cID +"-picture-main").css("background-image", 'url('+ getPicture(buddyJson.cID, 'contact', true) +')');
             }
             else if(buddyJson.Type == "group") {
-                console.log("Saving image for group buddy:", buddyJson.gID)
+                // RRR-LOG console.log("Saving image for group buddy:", buddyJson.gID)
                 localDB.setItem("img-"+ buddyJson.gID +"-group", base64);
                 // Update Images
                 $("#contact-"+ buddyJson.gID +"-picture").css("background-image", 'url('+ getPicture(buddyJson.gID, 'group', true) +')');
@@ -1549,7 +1544,7 @@ function InitUi(){
     leftHTML += "<span id=dereglink class=dotOnline style=\"display:none\"></span>";
     leftHTML += "<span id=WebRtcFailed class=dotFailed style=\"display:none\"></span>";
     leftHTML += "<span id=reglink class=dotOffline></span>";
-    // User
+    // User Robert
     leftHTML += " <span id=UserCallID></span>"
     leftHTML += "</div>"; // class=contactNameText
     leftHTML += "<div class=presenceText><span id=regStatus>&nbsp;</span> <span id=dndStatus></span></div>";
@@ -1570,7 +1565,7 @@ function InitUi(){
     leftHTML += "<tr><td class=streamSection>"
 
     // Lines & Buddies
-    leftHTML += "<div id=myContacts class=\"contactArea cleanScroller\"></div>"
+ 
     leftHTML += "<div id=actionArea style=\"display:none\" class=\"contactArea cleanScroller\"></div>"
     
     leftHTML += "</td></tr>";
@@ -1582,7 +1577,7 @@ function InitUi(){
     var rightSection = $("<div/>");
     rightSection.attr("id", "rightContent");
     rightSection.attr("class", "rightContent");
-    rightSection.attr("style", "margin-left: 320px; height: 100%");
+    rightSection.attr("style", "margin-left: 0px; height: 100%;"); // RRR 320 px
 
     phone.append(leftSection);
     phone.append(rightSection);
@@ -1694,19 +1689,7 @@ function InitUi(){
     $(".loading").remove();
 
     UpdateUI();
-
-    // Show Welcome Screen
-    if(welcomeScreen){
-        if(localDB.getItem("WelcomeScreenAccept") != "yes"){
-            OpenWindow(welcomeScreen, lang.welcome, 480, 600, true, false, lang.accept, function(){
-                localDB.setItem("WelcomeScreenAccept", "yes");
-                CloseWindow();
-                ShowMyProfile();
-            }, null, null, null, null);
-
-            return;
-        }
-    }
+    ShowDial();
 
     // Check if you account is created
     if(profileUserID == null ){
@@ -1730,14 +1713,16 @@ function InitUi(){
 
     CreateUserAgent();
 }
+
 function ShowMyProfileMenu(obj){
     var enabledHtml = " <i class=\"fa fa-check\" style=\"float: right; line-height: 18px;\"></i>";
 
     var items = [];
     items.push({ icon: "fa fa-refresh", text: lang.refresh_registration, value: 1});
     items.push({ icon: "fa fa-wrench", text: lang.configure_extension, value: 2});
+    items.push({ icon: "fa fa-user-plus", text: ' Log Out', value: 3});
 
-    // RRR items.push({ icon: "fa fa-user-plus", text: lang.add_someone, value: 3});
+
     // items.push({ icon: "fa fa-users", text: lang.create_group, value: 4}); // TODO
     // RRR items.push({ icon : null, text: "-" });
 /*
@@ -1780,6 +1765,9 @@ function ShowMyProfileMenu(obj){
             }
             if(id == "2") {
                 ShowMyProfile();
+            }
+            if(id == "3") {
+                userAgent.registerer.unregister();
             }
            
             if(id == "9") {
@@ -1843,15 +1831,9 @@ function PreloadAudioFiles(){
     audioBlobs.Alert = { file : "Alert.mp3", url : hostingPrefix +"media/Alert.mp3" }
     audioBlobs.Ringtone = { file : "Ringtone_1.mp3", url : hostingPrefix +"media/Ringtone_1.mp3" }
     audioBlobs.speech_orig = { file : "speech_orig.mp3", url : hostingPrefix +"media/speech_orig.mp3" }
-    audioBlobs.Busy_UK = { file : "Tone_Busy-UK.mp3", url : hostingPrefix +"media/Tone_Busy-UK.mp3" }
     audioBlobs.Busy_US = { file : "Tone_Busy-US.mp3", url : hostingPrefix +"media/Tone_Busy-US.mp3" }
     audioBlobs.CallWaiting = { file : "Tone_CallWaiting.mp3", url : hostingPrefix +"media/Tone_CallWaiting.mp3" }
-    audioBlobs.Congestion_UK = { file : "Tone_Congestion-UK.mp3", url : hostingPrefix +"media/Tone_Congestion-UK.mp3" }
     audioBlobs.Congestion_US = { file : "Tone_Congestion-US.mp3", url : hostingPrefix +"media/Tone_Congestion-US.mp3" }
-    audioBlobs.EarlyMedia_Australia = { file : "Tone_EarlyMedia-Australia.mp3", url : hostingPrefix +"media/Tone_EarlyMedia-Australia.mp3" }
-    audioBlobs.EarlyMedia_European = { file : "Tone_EarlyMedia-European.mp3", url : hostingPrefix +"media/Tone_EarlyMedia-European.mp3" }
-    audioBlobs.EarlyMedia_Japan = { file : "Tone_EarlyMedia-Japan.mp3", url : hostingPrefix +"media/Tone_EarlyMedia-Japan.mp3" }
-    audioBlobs.EarlyMedia_UK = { file : "Tone_EarlyMedia-UK.mp3", url : hostingPrefix +"media/Tone_EarlyMedia-UK.mp3" }
     audioBlobs.EarlyMedia_US = { file : "Tone_EarlyMedia-US.mp3", url : hostingPrefix +"media/Tone_EarlyMedia-US.mp3" }
     
     $.each(audioBlobs, function (i, item) {
@@ -1882,10 +1864,6 @@ function CreateUserAgent() {
             server: "wss://"+ wssServer +":"+ WebSocketPort +""+ ServerPath,
             traceSip: false,
             connectionTimeout: TransportConnectionTimeout
-            // keepAliveInterval: 30 // Uncomment this and make this any number greater then 0 for keep alive... 
-            // NB, adding a keep alive will NOT fix bad internet, if your connection cannot stay open (permanent WebSocket Connection) you probably 
-            // have a router or ISP issue, and if your internet is so poor that you need to some how keep it alive with empty packets
-            // upgrade you internet connection. This is voip we are talking about here.
         },
         sessionDescriptionHandlerFactoryOptions: {
             peerConnectionConfiguration :{
@@ -1914,7 +1892,7 @@ function CreateUserAgent() {
         delegate: {
             onInvite: function (sip){
                 ReceiveCall(sip);
-            },
+	    },
             onMessage: function (sip){
                 ReceiveOutOfDialogMessage(sip);
             }
@@ -2427,6 +2405,8 @@ function ReceiveCall(session) {
         onCancel: function(sip){
             onInviteCancel(lineObj, sip)
         }
+
+        
     }
 
     // Possible Early Rejection options
@@ -2471,16 +2451,6 @@ function ReceiveCall(session) {
     var autoAnswerRequested = false;
     var answerTimeout = 1000;
     if (!AutoAnswerEnabled  && IntercomPolicy == "enabled"){ // Check headers only if policy is allow
-
-        // https://github.com/InnovateAsterisk/Browser-Phone/issues/126
-        // Alert-Info: info=alert-autoanswer
-        // Alert-Info: answer-after=0
-        // Call-info: answer-after=0; x=y
-        // Call-Info: Answer-After=0
-        // Alert-Info: ;info=alert-autoanswer
-        // Alert-Info: <sip:>;info=alert-autoanswer
-        // Alert-Info: <sip:domain>;info=alert-autoanswer
-
         var ci = session.request.headers["Call-Info"];
         if (ci !== undefined && ci.length > 0){
             for (var i = 0; i < ci.length; i++){
@@ -2519,11 +2489,6 @@ function ReceiveCall(session) {
         if(CurrentCalls == 0){ // There are no other calls, so you can answer
             console.log("Going to Auto Answer this call...");
             window.setTimeout(function(){
-                // If the call is with video, assume the auto answer is also
-                // In order for this to work nicely, the recipient maut be "ready" to accept video calls
-                // In order to ensure video call compatibility (i.e. the recipient must have their web cam in, and working)
-                // The NULL video should be configured
-                // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
                 if(lineObj.SipSession.data.withvideo) {
                     AnswerVideoCall(lineObj.LineNumber);
                 }
@@ -2865,6 +2830,20 @@ function RejectCall(lineNumber) {
     session.data.reasonCode = 486;
     session.data.reasonText = "Busy Here";
     teardownSession(lineObj);
+
+	// RRR POP-UP
+      const toggler = document.querySelector(".chat-toggler");
+      const isOpen =  toggler.classList.contains("open");
+      if (isOpen) {
+        document.querySelector(".chat-toggler").click();
+      }
+
+
+    InitUi(); // RRR
+
+
+
+
 }
 
 // Session Events
@@ -2903,6 +2882,8 @@ function onInviteCancel(lineObj, response){
         lineObj.SipSession.dispose().catch(function(error){
             console.log("Failed to dispose the cancel dialog", error);
         })
+   
+        document.querySelector(".chat-toggler").click();
 
         teardownSession(lineObj);
 }
@@ -3138,8 +3119,11 @@ function onSessionReceivedBye(lineObj, response){
     lineObj.SipSession.data.reasonText = "Normal Call clearing";
 
     response.accept(); // Send OK
+    
+  
+   teardownSession(lineObj);
+   
 
-    teardownSession(lineObj);
 }
 function onSessionReinvited(lineObj, response){
     // This may be used to include video streams
@@ -3520,6 +3504,9 @@ function teardownSession(lineObj) {
 
     // Custom Web hook
     if(typeof web_hook_on_terminate !== 'undefined') web_hook_on_terminate(session);
+
+    InitUi(); // RRR
+
 }
 
 // Mic and Speaker Levels
@@ -4160,26 +4147,6 @@ function DisplayQosData(sessionId){
                         QosData1.SendPacketRate.push(dataArray);
                     });
                 });
-
-                // This is the correct data
-                // var QosData0 = event.target.result[0].QosData;
-                // ReceiveBitRate: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-                // ReceiveJitter: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-                // ReceiveLevels: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-                // ReceivePacketLoss: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-                // ReceivePacketRate: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-                // SendBitRate: []
-                // SendPacketRate: []
-
-                // var QosData1 = event.target.result[1].QosData;
-                // ReceiveBitRate: []
-                // ReceiveJitter: []
-                // ReceiveLevels: []
-                // ReceivePacketLoss: []
-                // ReceivePacketRate: []
-                // SendBitRate: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-                // SendPacketRate: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-
             } else{
                 console.warn("Result not expected", event.target.result);
                 return
@@ -5395,7 +5362,7 @@ function AddCallMessage(buddy, session) {
 
     currentStream.DataCollection.push(newMessageJson);
     currentStream.TotalRows = currentStream.DataCollection.length;
-    localDB.setItem(buddy + "-stream", JSON.stringify(currentStream));
+    localDB.setItem(buddy + "-stream", JSON.stringify(currentStream)); 
 
     UpdateBuddyActivity(buddy);
 
@@ -7800,7 +7767,7 @@ function endSession(lineNum) {
     teardownSession(lineObj);
     updateLineScroll(lineNum);
 
-	    InitUi(); // RRR
+    InitUi(); // RRR
 }
 function sendDTMF(lineNum, itemStr) {
     var lineObj = FindLineByNumber(lineNum);
@@ -8477,7 +8444,7 @@ function ShowDial(){
     $("#searchArea").hide();
     $("#actionArea").empty();
 
-    var html = "<div style=\"text-align:right\"><button class=roundButtons onclick=\"ShowContacts()\"><i class=\"fa fa-close\"></i></button></div>"
+    var html = "<div style=\"text-align:right\"></div>"
     html += "<div style=\"text-align:center; margin-top:15px\"><input id=dialText class=dialTextInput oninput=\"handleDialInput(this, event)\" onkeydown=\"dialOnkeydown(event, this)\" style=\"width:170px; height:32px\"><button id=dialDeleteKey class=roundButtons onclick=\"KeyPress('del')\">⌫</button></div>";
     html += "<table cellspacing=10 cellpadding=0 style=\"margin-left:auto; margin-right: auto\">";
     html += "<tr><td><button class=dialButtons onclick=\"KeyPress('1')\"><div>1</div><span>&nbsp;</span></button></td>"
@@ -8664,7 +8631,7 @@ function ShowContacts(){
     $("#actionArea").hide();
     $("#actionArea").empty();
 
-    $("#myContacts").show();
+    $("#myContacts").hide(); // RRR
     $("#searchArea").show();
 }
 function ShowSortAnfFilter(){
@@ -8956,11 +8923,6 @@ function AddLineHtml(lineObj, direction){
     var html = "<table id=\"line-ui-"+ lineObj.LineNumber +"\" class=stream cellspacing=0 cellpadding=0>";
     html += "<tr><td class=\"streamSection highlightSection\" style=\"height: 85px;\">";
 
-    // Close|Return|Back Button
-    html += "<div style=\"float:left; margin:0px; padding:5px; height:38px; line-height:38px\">"
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-back\" onclick=\"CloseLine('"+ lineObj.LineNumber +"')\" class=roundButtons title=\""+ lang.back +"\"><i class=\"fa fa-chevron-left\"></i></button> ";
-    html += "</div>"
-
     // Profile UI
     html += "<div class=contact style=\"cursor: unset; float: left;\">";
     html += "<div id=\"line-ui-"+ lineObj.LineNumber +"-LineIcon\" class=lineIcon>"+ lineObj.LineNumber +"</div>";
@@ -9114,10 +9076,11 @@ function AddLineHtml(lineObj, direction){
     // Visible Row
     html += "<div>";
     // Mute
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Mute\" onclick=\"MuteSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.mute +"\"><i class=\"fa fa-microphone-slash\"></i></button>";
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Unmute\" onclick=\"UnmuteSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.unmute +"\" style=\"color: red; display:none\"><i class=\"fa fa-microphone\"></i></button>";
-    // Hold
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Hold\" onclick=\"holdSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\"  title=\""+ lang.hold_call +"\"><i class=\"fa fa-pause-circle\"></i></button>";
+    //RRR html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Mute\" onclick=\"MuteSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.mute +"\"><i class=\"fa fa-microphone-slash\"></i></button>";
+    //RRR html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Unmute\" onclick=\"UnmuteSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.unmute +"\" style=\"color: red; display:none\"><i class=\"fa fa-microphone\"></i></button>";
+   
+  // Hold
+     html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Hold\" onclick=\"holdSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\"  title=\""+ lang.hold_call +"\"><i class=\"fa fa-pause-circle\"></i></button>";
     html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-Unhold\" onclick=\"unholdSession('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.resume_call +"\" style=\"color: red; display:none\"><i class=\"fa fa-play-circle\"></i></button>";
 
     if(direction == "outbound"){
@@ -9162,7 +9125,7 @@ function AddLineHtml(lineObj, direction){
         html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-ShowDtmf\" onclick=\"ShowDtmfMenu('"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.send_dtmf +"\"><i class=\"fa fa-keyboard-o\"></i></button>";
     }
     // Settings
-    html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-settings\" onclick=\"ChangeSettings('"+ lineObj.LineNumber +"', this)\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.device_settings +"\"><i class=\"fa fa-volume-up\"></i></button>";
+     // RRR html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-settings\" onclick=\"ChangeSettings('"+ lineObj.LineNumber +"', this)\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.device_settings +"\"><i class=\"fa fa-volume-up\"></i></button>";
     // Present
     // RRR html += "<button id=\"line-"+ lineObj.LineNumber +"-btn-present-src\" onclick=\"ShowPresentMenu(this, '"+ lineObj.LineNumber +"')\" class=\"roundButtons dialButtons inCallButtons\" title=\""+ lang.camera +"\"><i class=\"fa fa-video-camera\"></i></button>";
     // Call Stats
@@ -11773,70 +11736,70 @@ function ShowMyProfile(){
     html += "<div border=0 class=UiSideField>";
 
     // SIP Account
-    if(EnableAccountSettings == true){
-        html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Configure_Extension_Html')\"><i class=\"fa fa-user-circle-o UiTextHeadingIcon\" style=\"background-color:#a93a3a\"></i> "+ lang.account +"</div>"
+    if (EnableAccountSettings == true) {
+        html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Configure_Extension_Html')\"><i class=\"fa fa-user-circle-o UiTextHeadingIcon\" style=\"background-color:#a93a3a\"></i> " + lang.account + "</div>"
     }
-    var AccountHtml =  "<div id=Configure_Extension_Html style=\"display:none\">";
-    AccountHtml += "<div class=UiText>"+ lang.asterisk_server_address +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_wssServer class=UiInputText type=text placeholder='"+ lang.eg_asterisk_server_address +"' value='"+ getDbItem("wssServer", "") +"'></div>";
+    var AccountHtml = "<div id=Configure_Extension_Html style=\"display:none\">";
+    AccountHtml += "<div class=UiText>" + lang.asterisk_server_address + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_wssServer class=UiInputText type=text placeholder='" + lang.eg_asterisk_server_address + "' value='" + getDbItem("wssServer", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>"+ lang.websocket_port +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_WebSocketPort class=UiInputText type=text placeholder='"+ lang.eg_websocket_port +"' value='"+ getDbItem("WebSocketPort", "") +"'></div>";
+    AccountHtml += "<div class=UiText>" + lang.websocket_port + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_WebSocketPort class=UiInputText type=text placeholder='" + lang.eg_websocket_port + "' value='" + getDbItem("WebSocketPort", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>"+ lang.websocket_path +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_ServerPath class=UiInputText type=text placeholder='"+ lang.eg_websocket_path +"' value='"+ getDbItem("ServerPath", "") +"'></div>";
+    AccountHtml += "<div class=UiText>" + lang.websocket_path + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_ServerPath class=UiInputText type=text placeholder='" + lang.eg_websocket_path + "' value='" + getDbItem("ServerPath", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>"+ lang.full_name +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_profileName class=UiInputText type=text placeholder='"+ lang.eg_full_name +"' value='"+ getDbItem("profileName", "") +"'></div>";
+    AccountHtml += "<div class=UiText>" + lang.full_name + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_profileName class=UiInputText type=text placeholder='" + lang.eg_full_name + "' value='" + getDbItem("profileName", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>"+ lang.sip_domain +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_SipDomain class=UiInputText type=text placeholder='"+ lang.eg_sip_domain +"' value='"+ getDbItem("SipDomain", "") +"'></div>";
+    AccountHtml += "<div class=UiText>" + lang.sip_domain + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_SipDomain class=UiInputText type=text placeholder='" + lang.eg_sip_domain + "' value='" + getDbItem("SipDomain", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>"+ lang.sip_username +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_SipUsername class=UiInputText type=text placeholder='"+ lang.eg_sip_username +"' value='"+ getDbItem("SipUsername", "") +"'></div>";
+    AccountHtml += "<div class=UiText>" + lang.sip_username + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_SipUsername class=UiInputText type=text placeholder='" + lang.eg_sip_username + "' value='" + getDbItem("SipUsername", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>"+ lang.sip_password +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_SipPassword class=UiInputText type=password placeholder='"+ lang.eg_sip_password +"' value='"+ getDbItem("SipPassword", "") +"'></div>";
+    AccountHtml += "<div class=UiText>" + lang.sip_password + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_SipPassword class=UiInputText type=password placeholder='" + lang.eg_sip_password + "' value='" + getDbItem("SipPassword", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>"+ lang.subscribe_voicemail +":</div>";
-    AccountHtml += "<div><input type=checkbox id=Configure_Account_Voicemail_Subscribe "+ ((VoiceMailSubscribe == true)? "checked" : "") +"><label for=Configure_Account_Voicemail_Subscribe>"+ lang.yes +"</label></div>";
+    AccountHtml += "<div class=UiText>" + lang.subscribe_voicemail + ":</div>";
+    AccountHtml += "<div><input type=checkbox id=Configure_Account_Voicemail_Subscribe " + ((VoiceMailSubscribe == true) ? "checked" : "") + "><label for=Configure_Account_Voicemail_Subscribe>" + lang.yes + "</label></div>";
 
-    AccountHtml += "<div id=Voicemail_Did_row style=\"display:"+ ((VoiceMailSubscribe == true)? "unset" : "none") +"\">";
-    AccountHtml += "<div class=UiText style=\"margin-left:20px\">"+ lang.voicemail_did +":</div>";
-    AccountHtml += "<div style=\"margin-left:20px\"><input id=Configure_Account_Voicemail_Did class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"' value='"+ getDbItem("VoicemailDid", "") +"'></div>";
+    AccountHtml += "<div id=Voicemail_Did_row style=\"display:" + ((VoiceMailSubscribe == true) ? "unset" : "none") + "\">";
+    AccountHtml += "<div class=UiText style=\"margin-left:20px\">" + lang.voicemail_did + ":</div>";
+    AccountHtml += "<div style=\"margin-left:20px\"><input id=Configure_Account_Voicemail_Did class=UiInputText type=text placeholder='" + lang.eg_internal_subscribe_extension + "' value='" + getDbItem("VoicemailDid", "") + "'></div>";
     AccountHtml += "</div>";
 
-    AccountHtml += "<div class=UiText>"+ lang.chat_engine +":</div>";
+    AccountHtml += "<div class=UiText>" + lang.chat_engine + ":</div>";
 
     AccountHtml += "<ul style=\"list-style-type:none\">"
-    AccountHtml += "<li><input type=radio name=chatEngine id=chat_type_sip "+ ((ChatEngine == "XMPP")? "" : "checked") +"><label for=chat_type_sip>SIP</label>"
-    AccountHtml += "<li><input type=radio name=chatEngine id=chat_type_xmpp "+ ((ChatEngine == "XMPP")? "checked" : "") +"><label for=chat_type_xmpp>XMPP</label>"
+    AccountHtml += "<li><input type=radio name=chatEngine id=chat_type_sip " + ((ChatEngine == "XMPP") ? "" : "checked") + "><label for=chat_type_sip>SIP</label>"
+    AccountHtml += "<li><input type=radio name=chatEngine id=chat_type_xmpp " + ((ChatEngine == "XMPP") ? "checked" : "") + "><label for=chat_type_xmpp>XMPP</label>"
     AccountHtml += "</ul>"
 
-    AccountHtml += "<div id=RowChatEngine_xmpp style=\"display:"+ ((ChatEngine == "XMPP")? "unset" : "none") +"\">";
+    AccountHtml += "<div id=RowChatEngine_xmpp style=\"display:" + ((ChatEngine == "XMPP") ? "unset" : "none") + "\">";
 
-    AccountHtml += "<div class=UiText>"+ lang.xmpp_server_address +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_xmpp_address class=UiInputText type=text placeholder='"+ lang.eg_xmpp_server_address +"' value='"+ getDbItem("XmppServer", "") +"'></div>";
+    AccountHtml += "<div class=UiText>" + lang.xmpp_server_address + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_xmpp_address class=UiInputText type=text placeholder='" + lang.eg_xmpp_server_address + "' value='" + getDbItem("XmppServer", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>XMPP "+ lang.websocket_port +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_xmpp_port class=UiInputText type=text placeholder='"+ lang.eg_websocket_port +"' value='"+ getDbItem("XmppWebsocketPort", "") +"'></div>";
+    AccountHtml += "<div class=UiText>XMPP " + lang.websocket_port + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_xmpp_port class=UiInputText type=text placeholder='" + lang.eg_websocket_port + "' value='" + getDbItem("XmppWebsocketPort", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>XMPP "+ lang.websocket_path +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_xmpp_path class=UiInputText type=text placeholder='"+ lang.eg_websocket_path +"' value='"+ getDbItem("XmppWebsocketPath", "") +"'></div>";
+    AccountHtml += "<div class=UiText>XMPP " + lang.websocket_path + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_xmpp_path class=UiInputText type=text placeholder='" + lang.eg_websocket_path + "' value='" + getDbItem("XmppWebsocketPath", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>XMPP "+ lang.sip_domain +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_xmpp_domain class=UiInputText type=text placeholder='"+ lang.eg_sip_domain +"' value='"+ getDbItem("XmppDomain", "") +"'></div>";
+    AccountHtml += "<div class=UiText>XMPP " + lang.sip_domain + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_xmpp_domain class=UiInputText type=text placeholder='" + lang.eg_sip_domain + "' value='" + getDbItem("XmppDomain", "") + "'></div>";
 
-    AccountHtml += "<div class=UiText>"+ lang.extension_number +":</div>";
-    AccountHtml += "<div><input id=Configure_Account_profileUser class=UiInputText type=text placeholder='"+ lang.eg_internal_subscribe_extension +"' value='"+ getDbItem("profileUser", "") +"'></div>";
+    AccountHtml += "<div class=UiText>" + lang.extension_number + ":</div>";
+    AccountHtml += "<div><input id=Configure_Account_profileUser class=UiInputText type=text placeholder='" + lang.eg_internal_subscribe_extension + "' value='" + getDbItem("profileUser", "") + "'></div>";
     AccountHtml += "</div>";
 
     AccountHtml += "</div>";
-    if(EnableAccountSettings == true) html += AccountHtml;
+    if (EnableAccountSettings == true) html += AccountHtml;
 
     // 2 Audio & Video
     html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Audio_Video_Html')\"><i class=\"fa fa fa-video-camera UiTextHeadingIcon\" style=\"background-color:#208e3c\"></i> "+ lang.audio_video +"</div>"
-
+   
     var AudioVideoHtml = "<div id=Audio_Video_Html style=\"display:none\">";
 
     AudioVideoHtml += "<div class=UiText>"+ lang.speaker +":</div>";
@@ -11904,7 +11867,7 @@ function ShowMyProfile(){
     AudioVideoHtml += "</div>";
 
     html += AudioVideoHtml;
-
+    
     // 3 Appearance
     if(EnableAppearanceSettings == true) {
         html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Appearance_Html')\"><i class=\"fa fa-pencil UiTextHeadingIcon\" style=\"background-color:#416493\"></i> "+ lang.appearance +"</div>"
@@ -11933,12 +11896,12 @@ function ShowMyProfile(){
     AppearanceHtml += "</div>";
 
     if(EnableAppearanceSettings == true) html += AppearanceHtml;
-
+   
     // 4 Notifications
     if(EnableNotificationSettings == true) {
         html += "<div class=UiTextHeading onclick=\"ToggleHeading(this,'Notifications_Html')\"><i class=\"fa fa-bell UiTextHeadingIcon\" style=\"background-color:#ab8e04\"></i> "+ lang.notifications +"</div>"
     }
-
+    
     var NotificationsHtml = "<div id=Notifications_Html style=\"display:none\">";
     NotificationsHtml += "<div class=UiText>"+ lang.notifications +":</div>";
     NotificationsHtml += "<div><input type=checkbox id=Settings_Notifications><label for=Settings_Notifications> "+ lang.enable_onscreen_notifications +"<label></div>";
@@ -15301,3 +15264,157 @@ var reconnectXmpp = function(){
 
     XMPP.connect(xmpp_username, xmpp_password, onStatusChange);
 }
+
+/** =======================	GRUPO RYD  ========================= */
+
+// --- Hook para reflejar cambios de IndexedDB en MySQL ---
+function enableIndexedDBSync(apiBaseUrl) {
+  const openRequest = indexedDB.open;
+
+  indexedDB.open = function (name, version) {
+    const req = openRequest.apply(this, arguments);
+
+    req.addEventListener("success", () => {
+      const db = req.result;
+
+      for (const storeName of db.objectStoreNames) {
+        const tx = db.transaction(storeName, "readwrite");
+        const store = tx.objectStore(storeName);
+
+        // Interceptar add/put
+        ["add", "put"].forEach((method) => {
+          const original = store[method];
+          store[method] = function (value, key) {
+            const request = original.apply(this, arguments);
+
+            request.onsuccess = () => {
+              syncSingleRecord(apiBaseUrl, storeName, value);
+            };
+
+            return request;
+          };
+        });
+
+        // Interceptar delete
+        const originalDelete = store.delete;
+        store.delete = function (key) {
+          const request = originalDelete.apply(this, arguments);
+          request.onsuccess = () => {
+            fetch(`${apiBaseUrl}/delete_record.php`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ store: storeName, key }),
+            });
+          };
+          return request;
+        };
+      }
+    });
+
+    return req;
+  };
+}
+
+// --- Enviar un solo registro al servidor ---
+async function syncSingleRecord(apiBaseUrl, storeName, record) {
+  if (storeName === "CallRecordings") {
+    const formData = new FormData();
+    formData.append("call_id", record.callId || "");
+    formData.append("file", record.blob, record.filename || "recording.webm");
+    formData.append("mime", record.blob.type || "application/octet-stream");
+
+    await fetch(`${apiBaseUrl}/save_recording.php`, {
+      method: "POST",
+      body: formData,
+    });
+  } else if (storeName === "CallQosData") {
+    await fetch(`${apiBaseUrl}/save_qos.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify([record]), // mando como array de 1
+    });
+  }
+
+  console.log(`? Registro de ${storeName} sincronizado`);
+}
+
+// --- Activar el sincronizador ---
+// Reemplaza con la URL real de tu backend PHP
+enableIndexedDBSync("https://pbx.ryd/api/");
+
+
+async function cargarInternos() {
+      try {
+        const res = await fetch(apiInternos);
+        const data = await res.json();
+
+        const select = document.getElementById("interno");
+        select.innerHTML = "";
+
+        data.forEach(ext => {
+          if (ext.status !== "unknown") {
+            const opt = document.createElement("option");
+            opt.value = ext.extension;
+            opt.textContent = `${ext.extension}`;
+            select.appendChild(opt);
+          }
+        });
+
+      } catch (err) {
+        document.getElementById("resultado").textContent = "Error cargando internos: " + err;
+      }
+    }
+
+async function registrarAgente() {
+  const usuario = document.getElementById("usuario").value;
+  const nombre = document.getElementById("nombre").value;
+  const numeroAgente = document.getElementById("agente").value;
+  const interno = document.getElementById("interno").value;
+
+  const payload = {
+    nombre_usuario: nombre,
+    usuario_crm: usuario,
+    numero_agente: numeroAgente,
+    interno_seleccionado: interno
+  };
+
+  localDB.setItem("wssServer", 'pbx.ryd');
+  localDB.setItem("WebSocketPort", '8089');
+  localDB.setItem("ServerPath", '/ws');
+  localDB.setItem("profileName", nombre);
+  localDB.setItem("SipDomain", 'pbx.ryd');
+  localDB.setItem("SipUsername", interno);
+  localDB.setItem("SipPassword", interno+'PSW');
+
+  RefreshRegistration();
+  window.location.href = "https://pbx.ryd/desaRYD/index.html"; // URL de destino
+}
+
+async function cargarInternos_00() {
+  try {
+    const res = await fetch(apiInternos);
+    const data = await res.json();
+
+    // Filtramos solo los internos v�lidos y formateamos los datos
+    const internos = data
+      .filter(ext => ext.status !== "unknown")
+      .map(ext => ({
+        extension: ext.extension,
+      }));
+
+     console.log(internos);
+    // ?? Retorna el JSON directamente
+    return JSON.stringify(internos);
+
+  } catch (err) {
+    // En caso de error, tambi�n devuelve un JSON
+    return JSON.stringify({
+      error: "Error cargando internos",
+      detalle: err.message
+    });
+  }
+}
+
+
+
+

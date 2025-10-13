@@ -8,9 +8,7 @@ body {
     height: 200vh; /* Para forzar el scroll y ver que el botón se mantiene fijo */
 }
 
-/* --- Estilos del Botón Flotante --- */
-
-
+/* --- Estilos del Boton flotante --- */
 .chat-toggler {
     position: fixed;
     top: 20px;       /* separaci�n desde arriba */
@@ -19,8 +17,8 @@ body {
     color: white;
     border: none;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -29,39 +27,19 @@ body {
     z-index: 1000;
 }
 
-.chat-toggler1 {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    width: 60px;
-    height: 60px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    transition: transform 0.3s ease;
-    z-index: 1000;
-}
-
 .chat-toggler .close-icon {
     display: none; /* Oculto por defecto */
 }
 
-/* --- Estilos de la Ventana del Chat --- */
-
+/* --- Estilos de la Ventana del Chat Telephony--- */
 
 .chat-widget {
     position: fixed;
-    bottom: 70px;
-    right: 30px;
-    width: 480px;
-    max-height: 500px;
-    background-color: white;
+    bottom: 80px;
+    right: 20px;
+    width: 350px;
+    height: 80%;
+    background-color: withe;
     border-radius: 15px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     display: flex;
@@ -69,7 +47,7 @@ body {
     overflow: hidden;
     z-index: 999;
     
-    /* Efecto de transición */
+    /* Efecto de transicion */
     transform: scale(0);
     transform-origin: bottom right;
     transition: transform 0.3s ease-in-out;
@@ -77,15 +55,9 @@ body {
 
 /* Clase para mostrar/ocultar */
 .chat-widget.open {
-    transform: scaleY(1);
-}
-
-
-
-/* Clase para mostrar/ocultar */
-.chat-widget.open1 {
     transform: scale(1);
 }
+
 .chat-toggler.open .material-icons {
     display: none; /* Oculta el ícono de chat */
 }
@@ -93,75 +65,69 @@ body {
     display: block; /* Muestra el ícono de cerrar */
 }
 
-
 /* --- Estilos internos del Chat --- */
-.chat-header {
-    background-color: red;
-    color: white;
-    padding: 20px;
-    text-align: center;
-    border-bottom: 1px solid #ddd;
-    height: 5px;
-}
-
-.chat-header h2 {
-    margin: 0;
-    font-size: 1.2em;
-}
-
-.chat-header p {
-    margin: 5px 0 0;
-    font-size: 0.8em;
-    opacity: 0.9;
-}
-
 .chat-body {
    padding-left: 0px;
    padding-right: 0px;
-   width: 360px;
-   height: 800px;
+   width: 100#;
+   height: 100%;
+}
+/* --- Estilos DASHBOARD --- */
 
+agentes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
 }
 
-.message {
-    margin-bottom: 15px;
-    max-width: 80%;
-    padding: 10px 15px;
-    border-radius: 20px;
-    line-height: 1.4;
+.card {
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  padding: 15px;
+  text-align: center;
+  transition: transform 0.2s ease-in-out, background-color 0.3s ease;
+  color: #fff;
 }
 
-.bot-message {
-    background-color: #e9e9eb;
-    color: #333;
-    align-self: flex-start;
+.card:hover {
+  transform: scale(1.03);
 }
 
-.user-message {
-    background-color: #007bff;
-    color: white;
-    margin-left: auto; /* Alinea a la derecha */
+.agent-name {
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 8px;
 }
 
-.chat-footer {
-    display: flex;
-    padding: 10px;
-    border-top: 1px solid #ddd;
-    background-color: #fff;
+.agent-number {
+  font-size: 0.9em;
+  margin-bottom: 10px;
 }
 
-.chat-footer input {
-    flex-grow: 1;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    padding: 10px 15px;
-    outline: none;
+.agent-state {
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 
-.chat-footer .send-btn {
-    background: none;
-    border: none;
-    color: #007bff;
-    cursor: pointer;
-    padding: 0 10px;
+.talking-with {
+  font-size: 0.85em;
 }
+
+/* Colores de fondo por estado */
+.card-online {
+  background-color: #2ecc71;
+}
+
+.card-busy {
+  background-color: #e74c3c;
+}
+
+.card-ringing {
+  background-color: #f39c12;
+}
+
+.card-offline {
+  background-color: #7f8c8d;
+}
+
+
