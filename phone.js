@@ -1720,7 +1720,8 @@ function ShowMyProfileMenu(obj){
     var items = [];
     items.push({ icon: "fa fa-refresh", text: lang.refresh_registration, value: 1});
     items.push({ icon: "fa fa-wrench", text: lang.configure_extension, value: 2});
-    items.push({ icon: "fa fa-user-plus", text: ' Log Out', value: 3});
+     items.push({ icon: "fa fa-user-plus", text: ' Registro de llamadas', value: 3});
+     items.push({ icon: "fa fa-user-plus", text: ' Log Out', value: 4});
 
 
     // items.push({ icon: "fa fa-users", text: lang.create_group, value: 4}); // TODO
@@ -1767,6 +1768,9 @@ function ShowMyProfileMenu(obj){
                 ShowMyProfile();
             }
             if(id == "3") {
+                RobertPrado();
+            }
+            if(id == "4") {
                 userAgent.registerer.unregister();
             }
            
@@ -1891,7 +1895,26 @@ function CreateUserAgent() {
         contactParams: {},
         delegate: {
             onInvite: function (sip){
-                ReceiveCall(sip);
+   		const SIPNS = (window.SIP || SIP) || {};
+    		const SessionState = SIPNS.SessionState;
+   		const add = sip?.stateChange?.addListener || sip?.stateChange?.on || sip?.on;
+    		if (typeof add === "function") {
+      			add.call(sip.stateChange || sip, function (state) {
+        		// ? llamada atendida (Established)
+        	if ((!SessionState && state === "Established") ||
+            		(SessionState && state === SessionState.Established)) {
+         		 window.web_hook_on_answered?.(sip);
+       		}
+
+  
+        	if ((!SessionState && state === "Terminated") ||
+            		(SessionState && state === SessionState.Terminated)) {
+          		window.web_hook_on_terminate?.(sip);
+        	}
+     	 });
+    	}
+
+ 	ReceiveCall(sip);
 	    },
             onMessage: function (sip){
                 ReceiveOutOfDialogMessage(sip);
@@ -5953,6 +5976,7 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
     lineObj.SipSession.data.withvideo = false;
     lineObj.SipSession.data.earlyReject = false;
     lineObj.SipSession.isOnHold = false;
+
     lineObj.SipSession.delegate = {
         onBye: function(sip){
             onSessionReceivedBye(lineObj, sip);
@@ -5980,6 +6004,7 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
             },
             onAccept:function(sip){
                 onInviteAccepted(lineObj, false, sip);
+		web_hook_on_answered(lineObj.SipSession);
             },
             onReject:function(sip){
                 onInviteRejected(lineObj, sip);

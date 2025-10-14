@@ -104,6 +104,10 @@ window.web_hook_on_transportError = (e) =>
 window.web_hook_on_invite = (session) =>
   sendWebhook("call.ringing", sessionSnapshot(session));
 
+window.web_hook_on_answered = (session) => 
+  sendWebhook("call.answered",sessionSnapshot(session)); 
+
+
 window.web_hook_on_terminate = (session) =>
   sendWebhook("call.terminated", sessionSnapshot(session));
 
