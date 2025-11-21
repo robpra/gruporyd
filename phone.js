@@ -1,17 +1,15 @@
-// Global Settingsstyle="background-image: 
-// ===============
 const appversion = "0.3.29";
 const sipjsversion = "0.20.0";
 const navUserAgent = window.navigator.userAgent;  // TODO: change to Navigator.userAgentData
 const instanceID = String(Date.now());
 const localDB = window.localStorage;
 
-// Global API INTEGRACION - CRM: 
-const apiInternos = "https://pbx.ryd/api/ari/status-phones.php";
+// Global API INTEGRACION - CRM: F
+const apiInternos = "https://pbx.ryd/api/ari/get_free_endpoints.php";
 const apiRegistro = "https://pbx.ryd/api/ari/registerAgent.php";
-
-// ===============
-
+const apiQueue = "https://pbx.ryd/gruporyd/api/voiceAPI.php";
+//============================
+window.localStorage.setItem('debug', '*');
 
 let loadAlternateLang = (getDbItem("loadAlternateLang", "0") == "1"); 
 const availableLang = ["es", "en", "pt-br"]; 
@@ -34,6 +32,8 @@ let wallpaperDark = getDbItem("wallpaperDark", "wallpaper.dark.webp");     // Wa
  * If you want to  keep this library in its original form, but still provision settings, look at the
  * index.html for some sample provisioning and web_hook options.
  */
+
+
 let profileUserID = getDbItem("profileUserID", null);   // Internal reference ID. (DON'T CHANGE THIS!)
 let profileName = getDbItem("profileName", null);       // eg: Keyla James
 let wssServer = getDbItem("wssServer", null);           // eg: raspberrypi.local
@@ -42,6 +42,11 @@ let ServerPath = getDbItem("ServerPath", null);         // eg: /ws
 let SipDomain = getDbItem("SipDomain", null);           // eg: raspberrypi.local
 let SipUsername = getDbItem("SipUsername", null);       // eg: webrtc
 let SipPassword = getDbItem("SipPassword", null);       // eg: webrtc
+let idAgent  = getDbItem("idAgent", null);		// eg: webrtc
+let idQueue  = getDbItem("idQueue", null);		// eg: webrtc
+let idUsuario= getDbItem("idUsuario", null);		// eg: webrt
+let QueuePri = getDbItem("QueuePri", null);
+let rolCRM   = getDbItem("rolCRM", null);
 
 let SingleInstance = (getDbItem("SingleInstance", "1") == "1");      // Un-registers this account if the phone is opened in another tab/window
 
@@ -69,7 +74,7 @@ let SubscribeBuddyAccept = getDbItem("SubscribeBuddyAccept", "application/pidf+x
 let SubscribeBuddyEvent = getDbItem("SubscribeBuddyEvent", "presence");                // For application/pidf+xml use presence. For application/dialog-info+xml use dialog 
 let SubscribeBuddyExpires = parseInt(getDbItem("SubscribeBuddyExpires", 300));         // Buddy Subscription expiry time (in seconds)
 let ProfileDisplayPrefix = getDbItem("ProfileDisplayPrefix", "");                      // Can display an item from your vCard before your name. Options: Number1 | Number2
-let ProfileDisplayPrefixSeparator = getDbItem("ProfileDisplayPrefixSeparator", "");    // Used with profileDisplayPrefix, adds a separating character (string). eg: - ~ * or even 💥
+let ProfileDisplayPrefixSeparator = getDbItem("ProfileDisplayPrefixSeparator", "");    // Used with profileDisplayPrefix, adds a separating character (string). eg: - ~ * or even ð¥
 let InviteExtraHeaders = getDbItem("InviteExtraHeaders", "{}");                       // Extra SIP headers to be included in the initial INVITE message for each call. (Added to the extra headers in the DialByLine() parameters. e.g {"foo":"bar"})
 
 let NoAnswerTimeout = parseInt(getDbItem("NoAnswerTimeout", 120));          // Time in seconds before automatic Busy Here sent
@@ -174,6 +179,9 @@ let EnableEmail = false;           // Enables Email sending to the server (requi
 
 // System variables
 // ================
+
+let HookcallerID = null;
+let Hookdid = null;
 let userAgent = null;
 let CanvasCollection = [];
 let Buddies = [];
@@ -348,7 +356,7 @@ function MakeDataArray(defaultValue, count){
 $(window).on("beforeunload", function(event) {
     var CurrentCalls = countSessions("0");
     if(CurrentCalls > 0){
-        console.warn("Warning, you have current calls open");
+         // RRR-LOG  console.warn("Warning, you have current calls open");
         // The best we can do is throw up a system alert question.
         event.preventDefault();
         return event.returnValue = "";
@@ -360,7 +368,7 @@ $(window).on("resize", function() {
     UpdateUI();
 });
 $(window).on("offline", function(){
-    console.warn('Offline!');
+     // RRR-LOG console.warn('Offline!');
 
     $("#regStatus").html(lang.disconnected_from_web_socket);
     $("#WebRtcFailed").show();
@@ -388,47 +396,47 @@ $(window).on("keypress", function(event) {
         // Blind Transfer the current Call
         if(event.key == "b"){
             event.preventDefault();
-            console.log("Keyboard Shortcut for: Start Blind Transfer");
+             // RRR-LOG console.log("Keyboard Shortcut for: Start Blind Transfer");
         }
         // Attended Transfer the current Call
         if(event.key == "a"){
             event.preventDefault();
-            console.log("Keyboard Shortcut for: Start Attended Transfer");
+             // RRR-LOG console.log("Keyboard Shortcut for: Start Attended Transfer");
         }
         // Audio Call current selected buddy
         if(event.key == "c"){
             event.preventDefault();
-            console.log("Keyboard Shortcut for: Start Audio Call");
+             // RRR-LOG console.log("Keyboard Shortcut for: Start Audio Call");
         }
         // Video Call current selected buddy
         if(event.key == "v"){
             event.preventDefault();
-            console.log("Keyboard Shortcut for: Start Video Call");
+             // RRR-LOG console.log("Keyboard Shortcut for: Start Video Call");
         }
         // Hold (Toggle)
         if(event.key == "h"){
             event.preventDefault();
-            console.log("Keyboard Shortcut for: Hold Toggle");
+             // RRR-LOG console.log("Keyboard Shortcut for: Hold Toggle");
         }
         // Mute (Toggle)
         if(event.key == "m"){
             event.preventDefault();
-            console.log("Keyboard Shortcut for: Mute Toggle");
+             // RRR-LOG console.log("Keyboard Shortcut for: Mute Toggle");
         }
         // End current call
         if(event.key == "e"){
             event.preventDefault();
-            console.log("Keyboard Shortcut for: End current call");
+             // RRR-LOG console.log("Keyboard Shortcut for: End current call");
         }
         // Recording (Start/Stop)
         if(event.key == "r"){
             event.preventDefault();
-            console.log("Keyboard Shortcut for: Recording Toggle");
+             // RRR-LOG console.log("Keyboard Shortcut for: Recording Toggle");
         }
         // Select line 1-9
         if(event.key == "1" || event.key == "2" | event.key == "3" || event.key == "4" || event.key == "5" || event.key == "6" || event.key == "7" || event.key == "8" || event.key == "9"){
             event.preventDefault();
-            console.log("Keyboard Shortcut for: Select Line", event.key);
+             // RRR-LOG console.log("Keyboard Shortcut for: Select Line", event.key);
         }
     }
 });
@@ -437,11 +445,6 @@ $(document).ready(function () {
     // We will use the IndexDB, so connect to it now, and perform any upgrade options
     PrepareIndexDB();
 
-    // Load phoneOptions
-    // =================
-    // Note: These options can be defined in the containing HTML page, and simply defined as a global variable
-    // var phoneOptions = {} // would work in index.html
-    // Even if the setting is defined on the database, these variables get loaded after.
 
     var options = (typeof phoneOptions !== 'undefined')? phoneOptions : {};
 
@@ -460,7 +463,13 @@ $(document).ready(function () {
     if(options.SipUsername !== undefined) SipUsername = options.SipUsername;
     if(options.SipPassword !== undefined) SipPassword = options.SipPassword;
     if(options.SingleInstance !== undefined) SingleInstance = options.SingleInstance;
+    if(options.idAgent  !== undefined) idAgent = options.idAgent;
+    if(options.idQueue  !== undefined) idQueue = options.idQueue;
+    if(options.idUsuario!== undefined) idUsuario= options.idUsuario;
+    if(options.QueuePri!== undefined) QueuePri= options.QueuePri;
+    if(options.rolCRM!== undefined) rolCRM= options.rolCRM;
 
+  
     if(options.TransportConnectionTimeout !== undefined) TransportConnectionTimeout = options.TransportConnectionTimeout;
     if(options.TransportReconnectionAttempts !== undefined) TransportReconnectionAttempts = options.TransportReconnectionAttempts;
     if(options.TransportReconnectionTimeout !== undefined) TransportReconnectionTimeout = options.TransportReconnectionTimeout;
@@ -563,47 +572,43 @@ $(document).ready(function () {
     // Single Instance Check 
     if(SingleInstance == true){
         console.log("Instance ID :", instanceID);
-        // First we set (or try to set) the instance ID
         localDB.setItem("InstanceId", instanceID);
-
-     // Add New Message
-    var newMessageJson = {
-        clave: "InstanceId",
-        valor: instanceID
-    }
-	
-       // Now we attach a listener
+        var newMessageJson = {clave: "InstanceId", valor: instanceID}
         window.addEventListener('storage', onLocalStorageEvent, false);
+	// RRR LoginContactCenter();
     }
+  
+          
+   
 
-    
-
-    // Load Language File
-    // ==================
-    $.getJSON(hostingPrefix + "lang/en.json", function(data){
-        lang = data;
-        if(typeof web_hook_on_language_pack_loaded !== 'undefined') web_hook_on_language_pack_loaded(lang);
-        if(loadAlternateLang == true){
-            var userLang = GetAlternateLanguage();
-            if(userLang != ""){
-                  $.getJSON(hostingPrefix +"lang/"+ userLang +".json", function (alt_data){
-                    if(typeof web_hook_on_language_pack_loaded !== 'undefined') web_hook_on_language_pack_loaded(alt_data);
-                    lang = alt_data;
-                }).always(function() {
-                    // RRR-LOG console.log("Alternate Language Pack loaded: ", lang);
-                    InitUi();
-                });
-            }
-            else {
-                // RRR-LOG console.log("No Alternate Language Found.");
+// Load Language File
+// ==================
+$.getJSON(hostingPrefix + "lang/en.json", function(data){
+    lang = data;
+    // if(typeof web_hook_on_language_pack_loaded !== 'undefined') web_hook_on_language_pack_loaded(lang);
+    if(loadAlternateLang == true){
+        var userLang = GetAlternateLanguage();
+        if(userLang != ""){
+              $.getJSON(hostingPrefix +"lang/"+ userLang +".json", function (alt_data){
+                // if(typeof web_hook_on_language_pack_loaded !== 'undefined') web_hook_on_language_pack_loaded(alt_data);
+                lang = alt_data;
+            }).always(function() {
+                // RRR-LOG console.log("Alternate Language Pack loaded: ", lang);
                 InitUi();
-            }
+            });
         }
         else {
+            // RRR-LOG console.log("No Alternate Language Found.");
             InitUi();
         }
-    });
+    }
+    else {
+        InitUi();
+    }
 });
+
+});
+
 if(window.matchMedia){
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e){
         // RRR-LOG console.log(`Changed system Theme to: ${e.matches ? "dark" : "light"} mode`)
@@ -622,10 +627,10 @@ function PrepareIndexDB(){
     const CallQosDataOpenRequest = window.indexedDB.open("CallQosData", 1);
     // If this is the first visit to this page, this would have now made an empty IndexDB
     CallQosDataOpenRequest.onerror = function(event) {
-        console.error("CallQosData DBOpenRequest Error:", event);
+         // RRR-LOG console.error("CallQosData DBOpenRequest Error:", event);
     }
     CallQosDataOpenRequest.onupgradeneeded = function(event) {
-        console.warn("Upgrade Required for CallQosData IndexDB... probably because of first time use.");
+         // RRR-LOG console.warn("Upgrade Required for CallQosData IndexDB... probably because of first time use.");
         CallQosDataIndexDb = event.target.result;
         // Now the CallQosDataIndexDb is activated, but its still empty
 
@@ -635,10 +640,10 @@ function PrepareIndexDB(){
             objectStore.createIndex("sessionid", "sessionid", { unique: false });
             objectStore.createIndex("buddy", "buddy", { unique: false });
             objectStore.createIndex("QosData", "QosData", { unique: false });
-            console.log("IndexDB created ObjectStore CallQos");
+            // RRR-LOG  console.log("IndexDB created ObjectStore CallQos");
         }
         else {
-            console.warn("IndexDB requested upgrade, but object store was in place");
+             // RRR-LOG console.warn("IndexDB requested upgrade, but object store was in place");
         }
         // Will fire .onsuccess now
     }
@@ -646,21 +651,21 @@ function PrepareIndexDB(){
         CallQosDataIndexDb = event.target.result;
 
         CallQosDataIndexDb.onerror = function(event) {
-            console.error("IndexDB Error:", event);
+             // RRR-LOG console.error("IndexDB Error:", event);
         }
 
         if(CallQosDataIndexDb.objectStoreNames.contains("CallQos") == false){
-            console.warn("IndexDB is open but CallQos does not exist.");
+             // RRR-LOG console.warn("IndexDB is open but CallQos does not exist.");
             // Close the connection to the database
             CallQosDataIndexDb.close();
-            console.log("IndexDB is closed.");
+             // RRR-LOG console.log("IndexDB is closed.");
             // Drop the Database
             const DBDeleteRequest = window.indexedDB.deleteDatabase("CallQos");
             DBDeleteRequest.onerror = function(event) {
-                console.error("Error deleting database CallQos");
+                // RRR-LOG  console.error("Error deleting database CallQos");
             }
             DBDeleteRequest.onsuccess = function(event) {
-                console.log("Database deleted successfully");
+                 // RRR-LOG console.log("Database deleted successfully");
 
                 // Call the PrepareIndexDB() function again, this time it should make the DB correctly.
                 window.setTimeout(function(){
@@ -670,7 +675,7 @@ function PrepareIndexDB(){
             }
             return;
         }
-        console.log("IndexDB connected to CallQosData");
+         // RRR-LOG console.log("IndexDB connected to CallQosData");
     }
 
     // Call Recordings
@@ -678,10 +683,10 @@ function PrepareIndexDB(){
     const CallRecordingsOpenRequest = window.indexedDB.open("CallRecordings", 1);
     // If this is the first visit to this page, this would have now made an empty IndexDB
     CallRecordingsOpenRequest.onerror = function(event) {
-        console.error("CallRecordings DBOpenRequest Error:", event);
+         // RRR-LOG console.error("CallRecordings DBOpenRequest Error:", event);
     }
     CallRecordingsOpenRequest.onupgradeneeded = function(event) {
-        console.warn("Upgrade Required for CallRecordings IndexDB... probably because of first time use.");
+         // RRR-LOG console.warn("Upgrade Required for CallRecordings IndexDB... probably because of first time use.");
         CallRecordingsIndexDb = event.target.result;
         // Now the CallRecordingsIndexDb is activated, but its still empty
 
@@ -692,10 +697,10 @@ function PrepareIndexDB(){
             objectStore.createIndex("bytes", "bytes", { unique: false });
             objectStore.createIndex("type", "type", { unique: false });
             objectStore.createIndex("mediaBlob", "mediaBlob", { unique: false });
-            console.log("IndexDB created ObjectStore Recordings");
+             // RRR-LOG console.log("IndexDB created ObjectStore Recordings");
         }
         else {
-            console.warn("IndexDB requested upgrade, but object store was in place");
+             // RRR-LOG console.warn("IndexDB requested upgrade, but object store was in place");
         }
         // Will fire .onsuccess now
     }
@@ -703,22 +708,22 @@ function PrepareIndexDB(){
         CallRecordingsIndexDb = event.target.result;
 
         CallRecordingsIndexDb.onerror = function(event) {
-            console.error("IndexDB Error:", event);
+             // RRR-LOG console.error("IndexDB Error:", event);
         }
 
         // Double check structure
         if(CallRecordingsIndexDb.objectStoreNames.contains("Recordings") == false){
-            console.warn("IndexDB is open but Recordings does not exist.");
+             // RRR-LOG console.warn("IndexDB is open but Recordings does not exist.");
             // Close the connection to the database
             CallRecordingsIndexDb.close();
-            console.log("IndexDB is closed.");
+             // RRR-LOG console.log("IndexDB is closed.");
             // Drop the Database
             const DBDeleteRequest = window.indexedDB.deleteDatabase("CallRecordings");
             DBDeleteRequest.onerror = function(event) {
-                console.error("Error deleting database CallRecordings");
+                // RRR-LOG  console.error("Error deleting database CallRecordings");
             }
             DBDeleteRequest.onsuccess = function(event) {
-                console.log("Database deleted successfully");
+                 // RRR-LOG console.log("Database deleted successfully");
 
                 // Call the PrepareIndexDB() function again, this time it should make the DB correctly.
                 window.setTimeout(function(){
@@ -728,7 +733,7 @@ function PrepareIndexDB(){
             }
             return;
         }
-        console.log("IndexDB connected to CallRecordings");
+         // RRR-LOG console.log("IndexDB connected to CallRecordings");
     }
 }
 
@@ -879,6 +884,49 @@ function UpdateUI(){
         }
     }
     HidePopup();
+}
+
+
+function LoginContactCenter(datos){
+
+
+if(localDB.getItem("idUsuario") !== datos.idUsuario){
+	(async () => {
+  		const jsonText = await getEndpoint();       
+ 	 	const data = JSON.parse(jsonText);          
+  		const resource = data.resource;             
+ 		 // RRR-LOG console.log("Resource:", resource);  
+
+ 		localDB.setItem("wssServer", 'pbx.ryd');
+  		localDB.setItem("WebSocketPort", '8089');
+  		localDB.setItem("ServerPath", '/ws');
+		localDB.setItem("SipDomain", 'pbx.ryd');
+  		localDB.setItem("profileName", datos.usuario);
+
+  		localDB.setItem("idAgent",datos.idAgente); 
+		localDB.setItem("idQueue",datos.servicio);
+
+  		localDB.setItem("SipUsername",resource);
+  		localDB.setItem("SipPassword",resource+'PSW');
+		localDB.setItem("idUsuario",datos.idUsuario);
+		reloadOnce();
+		CreateUserAgent();
+
+       		// agregar a una cola
+		await fetch('https://pbx.ryd/telefoniaAPI/ami/queue/add', {
+  		method: 'POST',
+  		headers: { 'Content-Type': 'application/json' },
+  			body: JSON.stringify({
+    			queue: idQueue,
+    			member: 'SIP/'+resource})
+		})
+		.then(r => r.json())
+		 // RRR-LOG .then(console.log)
+		.catch(console.error);
+
+               
+	})();
+   }
 }
 
 // UI Windows
@@ -1212,7 +1260,7 @@ function HandleNotifyPermission(p){
     }
     else {
         Alert(lang.alert_notification_permission, lang.permission, function(){
-            console.log("Attempting to uncheck the checkbox...");
+             // RRR-LOG console.log("Attempting to uncheck the checkbox...");
             $("#Settings_Notifications").prop("checked", false);
         });
     }
@@ -1241,7 +1289,7 @@ function EditBuddyWindow(buddy){
     }
     if(UiCustomEditBuddy == true){
         if(typeof web_hook_on_edit_buddy !== 'undefined') {
-            web_hook_on_edit_buddy(buddyJson);
+            // web_hook_on_edit_buddy(buddyJson);
         }
         return;
     }
@@ -1448,7 +1496,7 @@ function EditBuddyWindow(buddy){
                 var fileSize = fileObj.size;
         
                 if (fileSize <= 52428800) {
-                    console.log("Adding (" + uploadId + "): " + fileName + " of size: " + fileSize + "bytes");
+                     // RRR-LOG console.log("Adding (" + uploadId + "): " + fileName + " of size: " + fileSize + "bytes");
         
                     var reader = new FileReader();
                     reader.Name = fileName;
@@ -1498,10 +1546,10 @@ function SetStatusWindow(){
 
 // Init UI
 // =======
-function InitUi(){
+function InitUi(){ // INICIO DEL SOFTPHONE
 
     // Custom Web hook
-    if(typeof web_hook_on_before_init !== 'undefined') web_hook_on_before_init(phoneOptions);
+    // if(typeof web_hook_on_before_init !== 'undefined') web_hook_on_before_init(phoneOptions);
 
     ApplyThemeColor()
 
@@ -1615,7 +1663,7 @@ function InitUi(){
     $("#BtnFilter").on('click', function(event){
         if(UiCustomSortAndFilterButton == true){
             if(typeof web_hook_sort_and_filter !== 'undefined') {
-                web_hook_sort_and_filter(event);
+               // web_hook_sort_and_filter(event);
             }
         } else {
             ShowSortAnfFilter();
@@ -1634,7 +1682,7 @@ function InitUi(){
 
         if(UiCustomDialButton == true){
             if(typeof web_hook_dial_out !== 'undefined') {
-                web_hook_dial_out(event);
+                //web_hook_dial_out(event);
             }
         } else {
             ShowDial();
@@ -1645,7 +1693,7 @@ function InitUi(){
     $("#BtnAddSomeone").on('click', function(event){
         if(UiCustomAddBuddy == true){
             if(typeof web_hook_on_add_buddy !== 'undefined') {
-                web_hook_on_add_buddy(event);
+               // web_hook_on_add_buddy(event);
             }
         } else {
             AddSomeoneWindow();
@@ -1667,7 +1715,7 @@ function InitUi(){
     $("#SettingsMenu").on('click', function(event){
         if(UiCustomConfigMenu == true){
             if(typeof web_hook_on_config_menu !== 'undefined') {
-                web_hook_on_config_menu(event);
+                //web_hook_on_config_menu(event);
             }
         } else {
             ShowMyProfileMenu(this);
@@ -1701,7 +1749,7 @@ function InitUi(){
 
     // Select Last user
     if(localDB.getItem("SelectedBuddy") != null){
-        console.log("Selecting previously selected buddy...", localDB.getItem("SelectedBuddy"));
+        // RRR-LOG  console.log("Selecting previously selected buddy...", localDB.getItem("SelectedBuddy"));
         SelectBuddy(localDB.getItem("SelectedBuddy"));
         UpdateUI();
     }
@@ -1709,19 +1757,19 @@ function InitUi(){
     PreloadAudioFiles();
 
     // Custom Web hook
-    if(typeof web_hook_on_init !== 'undefined') web_hook_on_init();
+   // if(typeof web_hook_on_init !== 'undefined') web_hook_on_init();
 
-    CreateUserAgent();
+    CreateUserAgent(); // CRFP
 }
 
 function ShowMyProfileMenu(obj){
     var enabledHtml = " <i class=\"fa fa-check\" style=\"float: right; line-height: 18px;\"></i>";
 
     var items = [];
-    items.push({ icon: "fa fa-refresh", text: lang.refresh_registration, value: 1});
-    items.push({ icon: "fa fa-wrench", text: lang.configure_extension, value: 2});
-     items.push({ icon: "fa fa-user-plus", text: ' Registro de llamadas', value: 3});
-     items.push({ icon: "fa fa-user-plus", text: ' Log Out', value: 4});
+    items.push({ icon: "fa fa-refresh",text: 'Disponible (Ready)', value: 1});
+    //items.push({ icon: "fa fa-wrench", text: lang.configure_extension, value: 2});
+    items.push({ icon: "fa fa-user-plus", text: 'No Disponible (NotReady)', value: 3});
+    items.push({ icon: "fa fa-user-plus", text: ' Log Out', value: 4});
 
 
     // items.push({ icon: "fa fa-users", text: lang.create_group, value: 4}); // TODO
@@ -1762,18 +1810,41 @@ function ShowMyProfileMenu(obj){
             var id = ui.item.attr("value");
             HidePopup();
             if(id == "1") {
-                RefreshRegistration();
-            }
+		if ( confirm(lang.reload_required) ) {
+    		    window.location.reload();
+               }
+	    }	
             if(id == "2") {
                 ShowMyProfile();
             }
             if(id == "3") {
                 RobertPrado();
             }
-            if(id == "4") {
-                userAgent.registerer.unregister();
-            }
-           
+	   if (id === "4") {
+  		// envolvemos en una función async
+  		(async () => {
+    			try {
+
+                        var agente = getDbItem("SipUsername");
+			var cola  = getDbItem("idQueue");
+
+      			const response = await fetch('https://pbx.ryd/telefoniaAPI/ami/queue/remove', {
+        		method: 'POST',
+        		headers: { 'Content-Type': 'application/json' },
+       			body: JSON.stringify({
+          		queue: cola, 
+         		member: 'SIP/'+agente 
+       			 })
+     		 });
+     		 const data = await response.json();
+     		 console.log('Removido de la cola:', data);
+    		} 
+		catch (err) {console.error('Error al quitar de la cola:', err);
+		}
+    		// después de quitarlo de la cola, desregistramos el usuario SIP
+    		userAgent.registerer.unregister();
+  		})();
+	 }           
             if(id == "9") {
                 SetStatusWindow();
             }
@@ -1903,13 +1974,25 @@ function CreateUserAgent() {
         		// ? llamada atendida (Established)
         	if ((!SessionState && state === "Established") ||
             		(SessionState && state === SessionState.Established)) {
-         		 window.web_hook_on_answered?.(sip);
+			let datosParaHook = {
+			"evento": "call.answered",
+			"callId": HookcallerID,
+			"servicio":idQueue ,
+			"usuario": profileName,
+			"idusuario": idUsuario,
+			"agente": idAgent,
+			"tipo": "Entrante",
+			"origen": HookcallerID+"-"+Hookdid,
+			"destino":SipUsername
+			};
+                        reportCallEvent(datosParaHook.evento,datosParaHook.tipo);
+         		window.web_hook_on_answered?.(datosParaHook);
        		}
 
   
         	if ((!SessionState && state === "Terminated") ||
             		(SessionState && state === SessionState.Terminated)) {
-          		window.web_hook_on_terminate?.(sip);
+          		//window.web_hook_on_terminate?.(sip);
         	}
      	 });
     	}
@@ -1941,7 +2024,7 @@ function CreateUserAgent() {
     // https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/RTCPeerConnection
     // Example: 
     // options.sessionDescriptionHandlerFactoryOptions.peerConnectionConfiguration.rtcpMuxPolicy = "require";
-    
+   
     userAgent = new SIP.UserAgent(options);
     userAgent.isRegistered = function(){
         return (userAgent && userAgent.registerer && userAgent.registerer.state == SIP.RegistererState.Registered);
@@ -1954,10 +2037,10 @@ function CreateUserAgent() {
     userAgent.transport.attemptingReconnection = false;
     userAgent.BlfSubs = [];
     userAgent.lastVoicemailCount = 0;
-
+    
     console.log("Creating User Agent... Done");
     // Custom Web hook
-    if(typeof web_hook_on_userAgent_created !== 'undefined') web_hook_on_userAgent_created(userAgent);
+   // if(typeof web_hook_on_userAgent_created !== 'undefined') web_hook_on_userAgent_created(userAgent);
 
     userAgent.transport.onConnect = function(){
         onTransportConnected();
@@ -1970,6 +2053,8 @@ function CreateUserAgent() {
             onTransportDisconnected();
         }
     }
+
+	window.ua = userAgent;	// CF
 
     var RegistererOptions = { 
         logConfiguration: false,            // If true, constructor logs the registerer configuration.
@@ -2053,7 +2138,7 @@ function onTransportConnected(){
             Register();
         }, 500);
     } else{
-        console.warn("onTransportConnected: Register() called, but attemptingReconnection is true or registering is true")
+         // RRR-LOG console.warn("onTransportConnected: Register() called, but attemptingReconnection is true or registering is true")
     }
 }
 function onTransportConnectError(error){
@@ -2064,7 +2149,7 @@ function onTransportConnectError(error){
 
     // If there is an issue with the WS connection
     // We unregister, so that we register again once its up
-    console.log("Unregister...");
+     // RRR-LOG console.log("Unregister...");
     try{
         userAgent.registerer.unregister();
     } catch(e){
@@ -2077,7 +2162,7 @@ function onTransportConnectError(error){
     ReconnectTransport();
 
     // Custom Web hook
-    if(typeof web_hook_on_transportError !== 'undefined') web_hook_on_transportError(userAgent.transport, userAgent);
+    //if(typeof web_hook_on_transportError !== 'undefined') web_hook_on_transportError(userAgent.transport, userAgent);
 }
 function onTransportDisconnected(){
     console.log("Disconnected from Web Socket!");
@@ -2136,7 +2221,7 @@ function Register() {
         }
     }
 
-    console.log("Sending Registration...");
+     // RRR-LOG console.log("Sending Registration...");
     $("#regStatus").html(lang.sending_registration);
     userAgent.registering = true
     userAgent.registerer.register(RegistererRegisterOptions);
@@ -2145,9 +2230,9 @@ function Unregister(skipUnsubscribe) {
     if (userAgent == null || !userAgent.isRegistered()) return;
 
     if(skipUnsubscribe == true){
-        console.log("Skipping Unsubscribe");
+         // RRR-LOG console.log("Skipping Unsubscribe");
     } else {
-        console.log("Unsubscribing...");
+         // RRR-LOG console.log("Unsubscribing...");
         $("#regStatus").html(lang.unsubscribing);
         try {
             UnsubscribeAll();
@@ -2163,6 +2248,7 @@ function Unregister(skipUnsubscribe) {
     userAgent.isReRegister = false;
 }
 
+
 // Registration Events
 // ===================
 /**
@@ -2173,11 +2259,9 @@ function onRegistered(){
     // to ensure that events are not fired multiple times
     // a isReRegister state is kept.
     // TODO: This check appears obsolete
-
     userAgent.registrationCompleted = true;
     if(!userAgent.isReRegister) {
         console.log("Registered!");
-
         $("#reglink").hide();
         $("#dereglink").show();
         if(DoNotDisturbEnabled || DoNotDisturbPolicy == "enabled") {
@@ -2205,7 +2289,7 @@ function onRegistered(){
         }
 
         // Custom Web hook
-        if(typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
+       // if(typeof web_hook_on_register !== 'undefined') web_hook_on_register(userAgent);
     }
     else {
         userAgent.registering = false;
@@ -2226,26 +2310,26 @@ function onRegisterFailed(response, cause){
     $("#reglink").show();
     $("#dereglink").hide();
 
-    Alert(lang.registration_failed +":"+ response, lang.registration_failed);
+    // RRR Alert(lang.registration_failed +":"+ response, lang.registration_failed);
 
     userAgent.registering = false;
 
     // Custom Web hook
-    if(typeof web_hook_on_registrationFailed !== 'undefined') web_hook_on_registrationFailed(response);
+    //if(typeof web_hook_on_registrationFailed !== 'undefined') web_hook_on_registrationFailed(response);
 }
 /**
  * Called when Unregister is requested
  */
 function onUnregistered(){
     if(userAgent.registrationCompleted){
-        console.log("Unregistered, bye!");
+         // RRR-LOG console.log("Unregistered, bye!");
         $("#regStatus").html(lang.unregistered);
 
         $("#reglink").show();
         $("#dereglink").hide();
 
         // Custom Web hook
-        if(typeof web_hook_on_unregistered !== 'undefined') web_hook_on_unregistered();
+        //if(typeof web_hook_on_unregistered !== 'undefined') web_hook_on_unregistered();
     }
     else {
         // Was never really registered, so cant really say unregistered
@@ -2262,6 +2346,10 @@ function ReceiveCall(session) {
     var callerID = session.remoteIdentity.displayName;
     var did = session.remoteIdentity.uri.user;
     if (typeof callerID === 'undefined') callerID = did;
+ 
+    HookcallerID = session.remoteIdentity.displayName;
+    Hookdid = session.remoteIdentity.uri.user;
+
 
     var sipHeaders = session.incomingInviteRequest.message.headers;
     // If a P-Asserted-Identity is parsed, use that
@@ -2273,21 +2361,21 @@ function ReceiveCall(session) {
             if(uriParts[1].endsWith("@"+SipDomain)){
                 var assertId = SIP.UserAgent.makeURI("sip:"+ uriParts[1]); // should be sip:123@domain.com
                 did = assertId.user;
-                console.log("Found P-Asserted-Identity, will use that to identify user:", did);
+                 // RRR-LOG console.log("Found P-Asserted-Identity, will use that to identify user:", did);
             }
             else {
-                console.warn("Found P-Asserted-Identity but not in trust domain: ", rawUri);
+                 // RRR-LOG console.warn("Found P-Asserted-Identity but not in trust domain: ", rawUri);
             }
         }
         else {
-            console.warn("Found P-Asserted-Identity but not in a URI: ", rawUri);
+             // RRR-LOG console.warn("Found P-Asserted-Identity but not in a URI: ", rawUri);
         }
     }
 
-    console.log("New Incoming Call!", callerID +" <"+ did +">");
+     console.log("New Incoming Call!", callerID +" <"+ did +">");
 
     var CurrentCalls = countSessions(session.id);
-    console.log("Current Call Count:", CurrentCalls);
+     // RRR-LOG console.log("Current Call Count:", CurrentCalls);
 
     var buddyObj = FindBuddyByDid(did);
     // Make new contact of its not there
@@ -2303,10 +2391,10 @@ function ReceiveCall(session) {
         if(sipHeaders.hasOwnProperty("X-Buddytype")){
             if(sipHeaders["X-Buddytype"][0].raw == "contact" || sipHeaders["X-Buddytype"][0].raw == "extension" || sipHeaders["X-Buddytype"][0].raw == "xmpp" || sipHeaders["X-Buddytype"][0].raw == "group"){
                 buddyType = sipHeaders["X-Buddytype"][0].raw;
-                console.log("Hint Header X-Buddytype:", buddyType)
+                 // RRR-LOG console.log("Hint Header X-Buddytype:", buddyType)
             }
             else {
-                console.warn("Hint Header X-Buddytype must either contact | extension | xmpp | group: ", sipHeaders["X-Buddytype"][0].raw);
+                 // RRR-LOG console.warn("Hint Header X-Buddytype must either contact | extension | xmpp | group: ", sipHeaders["X-Buddytype"][0].raw);
             }
         }
         var xmppJid = null;
@@ -2315,11 +2403,11 @@ function ReceiveCall(session) {
             if(sipHeaders.hasOwnProperty("X-Xmppjid")){
                 if(sipHeaders["X-Xmppjid"][0].raw.endsWith("@"+XmppDomain)){
                     xmppJid = sipHeaders["X-Xmppjid"][0].raw;
-                    console.log("Hint Header X-Xmppjid:", xmppJid)
+                     // RRR-LOG console.log("Hint Header X-Xmppjid:", xmppJid)
                 }
             }
             else {
-                console.warn("Hint Header X-Xmppjid must end with @XmppDomain", sipHeaders["X-Xmppjid"][0].raw);
+                 // RRR-LOG console.warn("Hint Header X-Xmppjid must end with @XmppDomain", sipHeaders["X-Xmppjid"][0].raw);
             }
         }
         // X-Subscribeuser: sip:1000@somedomain.com
@@ -2329,10 +2417,10 @@ function ReceiveCall(session) {
             if(sipHeaders["X-Subscribeuser"][0].raw.startsWith("sip:") && sipHeaders["X-Subscribeuser"][0].raw.endsWith("@"+SipDomain)){
                 subscribeUser = sipHeaders["X-Subscribeuser"][0].raw.substring(4, sipHeaders["X-Subscribeuser"][0].raw.indexOf("@"));
                 subscribeToBuddy = true;
-                console.log("Hint Header X-Subscribeuser:", subscribeUser)
+                 // RRR-LOG console.log("Hint Header X-Subscribeuser:", subscribeUser)
             }
             else {
-                console.warn("Hint Header X-Subscribeuser must start with sip: and end with @SipDomain", sipHeaders["X-Subscribeuser"][0].raw);
+                 // RRR-LOG console.warn("Hint Header X-Subscribeuser must start with sip: and end with @SipDomain", sipHeaders["X-Subscribeuser"][0].raw);
             }
         }
         var allowDuringDnd = false;
@@ -2340,10 +2428,10 @@ function ReceiveCall(session) {
         if(sipHeaders.hasOwnProperty("X-Allowduringdnd")){
             if(sipHeaders["X-Allowduringdnd"][0].raw == "yes" || sipHeaders["X-Allowduringdnd"][0].raw == "no"){
                 allowDuringDnd = (sipHeaders["X-Allowduringdnd"][0].raw == "yes");
-                console.log("Hint Header X-Allowduringdnd:", allowDuringDnd)
+                 // RRR-LOG console.log("Hint Header X-Allowduringdnd:", allowDuringDnd)
             }
             else {
-                console.warn("Hint Header X-Allowduringdnd must yes | no :", sipHeaders["X-Allowduringdnd"][0].raw);
+                 // RRR-LOG console.warn("Hint Header X-Allowduringdnd must yes | no :", sipHeaders["X-Allowduringdnd"][0].raw);
             }
         }
         var autoDelete = AutoDeleteDefault;
@@ -2351,10 +2439,10 @@ function ReceiveCall(session) {
         if(sipHeaders.hasOwnProperty("X-Autodelete")){
             if(sipHeaders["X-Autodelete"][0].raw == "yes" || sipHeaders["X-Autodelete"][0].raw == "no"){
                 autoDelete = (sipHeaders["X-Autodelete"][0].raw == "yes");
-                console.log("Hint Header X-Autodelete:", autoDelete)
+                 // RRR-LOG console.log("Hint Header X-Autodelete:", autoDelete)
             }
             else {
-                console.warn("Hint Header X-Autodelete must yes | no :", sipHeaders["X-Autodelete"][0].raw);
+                 // RRR-LOG console.warn("Hint Header X-Autodelete must yes | no :", sipHeaders["X-Autodelete"][0].raw);
             }
         }
         
@@ -2436,10 +2524,10 @@ function ReceiveCall(session) {
     if(DoNotDisturbEnabled == true || DoNotDisturbPolicy == "enabled") {
         if(DoNotDisturbEnabled == true && buddyObj.EnableDuringDnd == true){
             // This buddy has been allowed 
-            console.log("Buddy is allowed to call while you are on DND")
+             // RRR-LOG console.log("Buddy is allowed to call while you are on DND")
         }
         else {
-            console.log("Do Not Disturb Enabled, rejecting call.");
+             // RRR-LOG console.log("Do Not Disturb Enabled, rejecting call.");
             lineObj.SipSession.data.earlyReject = true;
             RejectCall(lineObj.LineNumber, true);
             return;
@@ -2447,7 +2535,7 @@ function ReceiveCall(session) {
     }
     if(CurrentCalls >= 1){
         if(CallWaitingEnabled == false || CallWaitingEnabled == "disabled"){
-            console.log("Call Waiting Disabled, rejecting call.");
+             // RRR-LOG console.log("Call Waiting Disabled, rejecting call.");
             lineObj.SipSession.data.earlyReject = true;
             RejectCall(lineObj.LineNumber, true);
             return;
@@ -2510,7 +2598,7 @@ function ReceiveCall(session) {
 
     if(AutoAnswerEnabled || AutoAnswerPolicy == "enabled" || autoAnswerRequested){
         if(CurrentCalls == 0){ // There are no other calls, so you can answer
-            console.log("Going to Auto Answer this call...");
+             // RRR-LOG console.log("Going to Auto Answer this call...");
             window.setTimeout(function(){
                 if(lineObj.SipSession.data.withvideo) {
                     AnswerVideoCall(lineObj.LineNumber);
@@ -2525,7 +2613,7 @@ function ReceiveCall(session) {
             return;
         }
         else {
-            console.warn("Could not auto answer call, already on a call.");
+             // RRR-LOG console.warn("Could not auto answer call, already on a call.");
         }
     }
 
@@ -2550,7 +2638,6 @@ function ReceiveCall(session) {
                 var lineNo = lineObj.LineNumber;
                 var videoInvite = lineObj.SipSession.data.withvideo
                 window.setTimeout(function(){
-                    // https://github.com/InnovateAsterisk/Browser-Phone/issues/26
                     if(videoInvite) {
                         AnswerVideoCall(lineNo)
                     }
@@ -2570,16 +2657,16 @@ function ReceiveCall(session) {
     if(EnableRingtone == true){
         if(CurrentCalls >= 1){
             // Play Alert
-            console.log("Audio:", audioBlobs.CallWaiting.url);
+             // RRR-LOG console.log("Audio:", audioBlobs.CallWaiting.url);
             var ringer = new Audio(audioBlobs.CallWaiting.blob);
             ringer.preload = "auto";
             ringer.loop = false;
             ringer.oncanplaythrough = function(e) {
                 if (typeof ringer.sinkId !== 'undefined' && getRingerOutputID() != "default") {
                     ringer.setSinkId(getRingerOutputID()).then(function() {
-                        console.log("Set sinkId to:", getRingerOutputID());
+                         // RRR-LOG console.log("Set sinkId to:", getRingerOutputID());
                     }).catch(function(e){
-                        console.warn("Failed not apply setSinkId.", e);
+                         // RRR-LOG console.warn("Failed not apply setSinkId.", e);
                     });
                 }
                 // If there has been no interaction with the page at all... this page will not work
@@ -2592,7 +2679,7 @@ function ReceiveCall(session) {
             lineObj.SipSession.data.ringerObj = ringer;
         } else {
             // Play Ring Tone
-            console.log("Audio:", audioBlobs.Ringtone.url);
+             // RRR-LOG console.log("Audio:", audioBlobs.Ringtone.url);
             var ringer = new Audio(audioBlobs.Ringtone.blob);
             ringer.preload = "auto";
             ringer.loop = true;
@@ -2601,14 +2688,14 @@ function ReceiveCall(session) {
                     ringer.setSinkId(getRingerOutputID()).then(function() {
                         console.log("Set sinkId to:", getRingerOutputID());
                     }).catch(function(e){
-                        console.warn("Failed not apply setSinkId.", e);
+                         // RRR-LOG console.warn("Failed not apply setSinkId.", e);
                     });
                 }
                 // If there has been no interaction with the page at all... this page will not work
                 ringer.play().then(function(){
                     // Audio Is Playing
                 }).catch(function(e){
-                    console.warn("Unable to play audio file.", e);
+                     // RRR-LOG console.warn("Unable to play audio file.", e);
                 }); 
             }
             lineObj.SipSession.data.ringerObj = ringer;
@@ -2623,7 +2710,7 @@ function ReceiveCall(session) {
       }
 
     // Custom Web hook
-    if(typeof web_hook_on_invite !== 'undefined') web_hook_on_invite(session);
+    //if(typeof web_hook_on_invite !== 'undefined') web_hook_on_invite(session);
 }
 function AnswerAudioCall(lineNumber) {
     // CloseWindow();
@@ -2677,7 +2764,7 @@ function AnswerAudioCall(lineNumber) {
             spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = { exact: currentAudioDevice }
         }
         else {
-            console.warn("The audio device you used before is no longer available, default settings applied.");
+             // RRR-LOG console.warn("The audio device you used before is no longer available, default settings applied.");
             localDB.setItem("AudioSrcId", "default");
         }
     }
@@ -2702,18 +2789,19 @@ function AnswerAudioCall(lineNumber) {
     lineObj.SipSession.accept(spdOptions).then(function(){
         onInviteAccepted(lineObj,false);
     }).catch(function(error){
-        console.warn("Failed to answer call", error, lineObj.SipSession);
+         // RRR-LOG console.warn("Failed to answer call", error, lineObj.SipSession);
         lineObj.SipSession.data.reasonCode = 500;
         lineObj.SipSession.data.reasonText = "Client Error";
         teardownSession(lineObj);
     });
 }
+
 function AnswerVideoCall(lineNumber) {
     // CloseWindow();
 
     var lineObj = FindLineByNumber(lineNumber);
     if(lineObj == null){
-        console.warn("Failed to get line ("+ lineNumber +")");
+         // RRR-LOG console.warn("Failed to get line ("+ lineNumber +")");
         return;
     }
     var session = lineObj.SipSession;
@@ -2760,7 +2848,7 @@ function AnswerVideoCall(lineNumber) {
             spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = { exact: currentAudioDevice }
         }
         else {
-            console.warn("The audio device you used before is no longer available, default settings applied.");
+             // RRR-LOG console.warn("The audio device you used before is no longer available, default settings applied.");
             localDB.setItem("AudioSrcId", "default");
         }
     }
@@ -2789,7 +2877,7 @@ function AnswerVideoCall(lineNumber) {
             spdOptions.sessionDescriptionHandlerOptions.constraints.video.deviceId = { exact: currentVideoDevice }
         }
         else {
-            console.warn("The video device you used before is no longer available, default settings applied.");
+             // RRR-LOG console.warn("The video device you used before is no longer available, default settings applied.");
             localDB.setItem("VideoSrcId", "default"); // resets for later and subsequent calls
         }
     }
@@ -2844,7 +2932,7 @@ function RejectCall(lineNumber) {
             statusCode: 486, 
             reasonPhrase: "Busy Here" 
         }).catch(function(e){
-            console.warn("Problem in RejectCall(), could not reject() call", e, session);
+             // RRR-LOG console.warn("Problem in RejectCall(), could not reject() call", e, session);
         });
     }
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.call_rejected);
@@ -2903,7 +2991,7 @@ function onInviteCancel(lineObj, response){
         }
 
         lineObj.SipSession.dispose().catch(function(error){
-            console.log("Failed to dispose the cancel dialog", error);
+             // RRR-LOG console.log("Failed to dispose the cancel dialog", error);
         })
    
         document.querySelector(".chat-toggler").click();
@@ -2960,11 +3048,11 @@ function onInviteAccepted(lineObj, includeVideo, response){
                     if(!parameters.encodings) parameters.encodings = [{}];
                     parameters.encodings[0].maxBitrate = MaxVideoBandwidth * 1000;
 
-                    console.log("Applying limit for Bandwidth to: ", MaxVideoBandwidth + "kb per second")
+                     // RRR-LOG console.log("Applying limit for Bandwidth to: ", MaxVideoBandwidth + "kb per second")
 
                     // Only going to try without re-negotiations
                     sender.setParameters(parameters).catch(function(e){
-                        console.warn("Cannot apply Bandwidth Limits", e);
+                        // RRR-LOG  console.warn("Cannot apply Bandwidth Limits", e);
                     });
 
                 }
@@ -3048,14 +3136,14 @@ function onInviteAccepted(lineObj, includeVideo, response){
     if(includeVideo && StartVideoFullScreen) ExpandVideoArea(lineObj.LineNumber);
 
     // Custom Web hook
-    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("accepted", session);
+    //if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("accepted", session);
 }
 // Outgoing INVITE
 function onInviteTrying(lineObj, response){
     $("#line-" + lineObj.LineNumber + "-msg").html(lang.trying);
 
     // Custom Web hook
-    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trying", lineObj.SipSession);
+    //if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trying", lineObj.SipSession);
 }
 function onInviteProgress(lineObj, response){
     console.log("Call Progress:", response.message.statusCode);
@@ -3115,7 +3203,7 @@ function onInviteProgress(lineObj, response){
     }
 
     // Custom Web hook
-    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("progress", lineObj.SipSession);
+   // if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("progress", lineObj.SipSession);
 }
 function onInviteRejected(lineObj, response){
     console.log("INVITE Rejected:", response.message.reasonPhrase);
@@ -3425,7 +3513,7 @@ function onTrackAddedEvent(lineObj, includeVideo){
     }
 
     // Custom Web hook
-    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trackAdded", session);
+    //if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("trackAdded", session);
 }
 
 // General end of Session
@@ -3526,7 +3614,7 @@ function teardownSession(lineObj) {
     }
 
     // Custom Web hook
-    if(typeof web_hook_on_terminate !== 'undefined') web_hook_on_terminate(session);
+    //if(typeof web_hook_on_terminate !== 'undefined') web_hook_on_terminate(session);
 
     InitUi(); // RRR
 
@@ -4666,7 +4754,7 @@ function VoicemailNotify(notification){
         }
 
         if(typeof web_hook_on_messages_waiting !== 'undefined') {
-            web_hook_on_messages_waiting(newVoiceMessages, oldVoiceMessages, ugentNewVoiceMessage, ugentOldVoiceMessage);
+           // web_hook_on_messages_waiting(newVoiceMessages, oldVoiceMessages, ugentNewVoiceMessage, ugentOldVoiceMessage);
         }
     }
     else {
@@ -4915,7 +5003,7 @@ closed: In the context of INSTANT MESSAGES, this value means that
             console.log("Self Notify:", Presence);
 
             // Custom Handling of Notify/BLF
-            if(typeof web_hook_on_self_notify !== 'undefined')  web_hook_on_self_notify(ContentType, notification.request.body);
+            //if(typeof web_hook_on_self_notify !== 'undefined')  web_hook_on_self_notify(ContentType, notification.request.body);
         }
         else {
             console.warn("Self Subscribe Notify, but wrong user returned.", buddy, SipUsername);
@@ -4963,7 +5051,7 @@ closed: In the context of INSTANT MESSAGES, this value means that
     }
 
     // Custom Handling of Notify/BLF
-    if(typeof web_hook_on_notify !== 'undefined')  web_hook_on_notify(ContentType, buddyObj, notification.request.body);
+    // if(typeof web_hook_on_notify !== 'undefined')  web_hook_on_notify(ContentType, buddyObj, notification.request.body);
 }
 
 // Buddy: Chat / Instant Message / XMPP
@@ -5040,7 +5128,7 @@ function SendChatMessage(buddy) {
         var messageObj = new SIP.Messager(userAgent, chatBuddy, message, "text/plain");
         messageObj.message(MessagerMessageOptions).then(function(){
             // Custom Web hook
-            if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(messageObj);
+            // if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(messageObj);
         });
     }
 
@@ -5051,7 +5139,7 @@ function SendChatMessage(buddy) {
         XmppSendMessage(buddyObj, message, messageId);
 
         // Custom Web hook
-        if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(message);
+       // if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(message);
     }
 
     // Group Chat
@@ -5230,7 +5318,7 @@ function ReceiveOutOfDialogMessage(message) {
         message.reject();
     }
     // Custom Web hook
-    if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(message);
+    // if(typeof web_hook_on_message !== 'undefined') web_hook_on_message(message);
 }
 function AddMessageToStream(buddyObj, messageId, type, message, DateTime){
     var currentStream = JSON.parse(localDB.getItem(buddyObj.identity + "-stream"));
@@ -5567,7 +5655,7 @@ function IncreaseMissedBadge(buddy) {
     $("#contact-" + buddy + "-missed").show();
 
     // Custom Web hook
-    if(typeof web_hook_on_missed_notify !== 'undefined') web_hook_on_missed_notify(buddyObj.missed);
+    // if(typeof web_hook_on_missed_notify !== 'undefined') web_hook_on_missed_notify(buddyObj.missed);
 
     console.log("Set Missed badge for "+ buddyObj.CallerIDName +" to: "+ buddyObj.missed);
 }
@@ -5625,7 +5713,7 @@ function ClearMissedBadge(buddy) {
     $("#contact-" + buddy + "-missed").text(buddyObj.missed);
     $("#contact-" + buddy + "-missed").hide(400);
 
-    if(typeof web_hook_on_missed_notify !== 'undefined') web_hook_on_missed_notify(buddyObj.missed);
+    // if(typeof web_hook_on_missed_notify !== 'undefined') web_hook_on_missed_notify(buddyObj.missed);
 }
 
 // Outbound Calling
@@ -5790,6 +5878,7 @@ function VideoCall(lineObj, dialledNumber, extraHeaders) {
             },
             onAccept:function(sip){
                 onInviteAccepted(lineObj, true, sip);
+		reportCallEvent("answered", sip);
             },
             onReject:function(sip){
                 onInviteRejected(lineObj, sip);
@@ -5813,7 +5902,7 @@ function VideoCall(lineObj, dialledNumber, extraHeaders) {
     updateLineScroll(lineObj.LineNumber);
 
     // Custom Web hook
-    if(typeof web_hook_on_invite !== 'undefined') web_hook_on_invite(lineObj.SipSession);
+    // if(typeof web_hook_on_invite !== 'undefined') web_hook_on_invite(lineObj.SipSession);
 }
 function AudioCallMenu(buddy, obj){
     var buddyObj = FindBuddyByIdentity(buddy);
@@ -5995,19 +6084,23 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
         requestDelegate: { // OutgoingRequestDelegate
             onTrying: function(sip){
                 onInviteTrying(lineObj, sip);
+                reportCallEvent("ringing",lineObj);
             },
             onProgress:function(sip){
-                onInviteProgress(lineObj, sip);
+                onInviteProgress(lineObj, sp);
             },
             onRedirect:function(sip){
                 onInviteRedirected(lineObj, sip);
             },
             onAccept:function(sip){
                 onInviteAccepted(lineObj, false, sip);
-		web_hook_on_answered(lineObj.SipSession);
+		// web_hook_on_answered(lineObj.SipSession);
+ 		// reportCallEvent("answered", sip);
             },
             onReject:function(sip){
                 onInviteRejected(lineObj, sip);
+		reportCallEvent("hungup", sip);
+
             }
         }
     }
@@ -6028,7 +6121,7 @@ function AudioCall(lineObj, dialledNumber, extraHeaders) {
     updateLineScroll(lineObj.LineNumber);
 
     // Custom Web hook
-    if(typeof web_hook_on_invite !== 'undefined') web_hook_on_invite(lineObj.SipSession);    
+ //   if(typeof web_hook_on_invite !== 'undefined') web_hook_on_invite(lineObj.SipSession);    
 }
 
 // Sessions & During Call Activity
@@ -7625,7 +7718,7 @@ function holdSession(lineNum) {
                 updateLineScroll(lineNum);
 
                 // Custom Web hook
-                if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("hold", session);
+                // if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("hold", session);
             },
             onReject: function(){
                 session.isOnHold = false;
@@ -7694,7 +7787,7 @@ function unholdSession(lineNum) {
                 updateLineScroll(lineNum);
 
                 // Custom Web hook
-                if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("unhold", session);
+               // if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("unhold", session);
             },
             onReject: function(){
                 session.isOnHold = true;
@@ -7738,7 +7831,7 @@ function MuteSession(lineNum){
     updateLineScroll(lineNum);
 
     // Custom Web hook
-    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("mute", session);
+    // if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("mute", session);
 }
 function UnmuteSession(lineNum){
     var lineObj = FindLineByNumber(lineNum);
@@ -7771,7 +7864,7 @@ function UnmuteSession(lineNum){
     updateLineScroll(lineNum);
 
     // Custom Web hook
-    if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("unmute", session);
+    // if(typeof web_hook_on_modify !== 'undefined') web_hook_on_modify("unmute", session);
 }
 function endSession(lineNum) {
     var lineObj = FindLineByNumber(lineNum);
@@ -7842,7 +7935,7 @@ function sendDTMF(lineNum, itemStr) {
             updateLineScroll(lineNum);
     
             // Custom Web hook
-            if(typeof web_hook_on_dtmf !== 'undefined') web_hook_on_dtmf(itemStr, lineObj.SipSession);
+            // if(typeof web_hook_on_dtmf !== 'undefined') web_hook_on_dtmf(itemStr, lineObj.SipSession);
         } 
         else {
             console.warn("Cannot Send DTMF ("+ itemStr +"): "+ lineObj.LineNumber + " session is not establishing or established");
@@ -8433,7 +8526,7 @@ function ExpandVideoArea(lineNum){
 
     RedrawStage(lineNum, false);
     if(typeof web_hook_on_expand_video_area !== 'undefined') {
-        web_hook_on_expand_video_area(lineNum);
+        // web_hook_on_expand_video_area(lineNum);
     }
 }
 function RestoreVideoArea(lineNum){
@@ -8446,7 +8539,7 @@ function RestoreVideoArea(lineNum){
 
     RedrawStage(lineNum, false);
     if(typeof web_hook_on_restore_video_area !== 'undefined') {
-        web_hook_on_restore_video_area(lineNum);
+        //web_hook_on_restore_video_area(lineNum);
     }
 }
 
@@ -8470,7 +8563,7 @@ function ShowDial(){
     $("#actionArea").empty();
 
     var html = "<div style=\"text-align:right\"></div>"
-    html += "<div style=\"text-align:center; margin-top:15px\"><input id=dialText class=dialTextInput oninput=\"handleDialInput(this, event)\" onkeydown=\"dialOnkeydown(event, this)\" style=\"width:170px; height:32px\"><button id=dialDeleteKey class=roundButtons onclick=\"KeyPress('del')\">⌫</button></div>";
+    html += "<div style=\"text-align:center; margin-top:15px\"><input id=dialText class=dialTextInput oninput=\"handleDialInput(this, event)\" onkeydown=\"dialOnkeydown(event, this)\" style=\"width:170px; height:32px\"><button id=dialDeleteKey class=roundButtons onclick=\"KeyPress('del')\">â«</button></div>";
     html += "<table cellspacing=10 cellpadding=0 style=\"margin-left:auto; margin-right: auto\">";
     html += "<tr><td><button class=dialButtons onclick=\"KeyPress('1')\"><div>1</div><span>&nbsp;</span></button></td>"
     html += "<td><button class=dialButtons onclick=\"KeyPress('2')\"><div>2</div><span>ABC</span></button></td>"
@@ -9772,7 +9865,7 @@ function UpdateBuddyList(){
         if(callCount == 0 && DisableFreeDial != true){
             if(UiCustomDialButton == true){
                 if(typeof web_hook_dial_out !== 'undefined') {
-                    web_hook_dial_out(null);
+                    //web_hook_dial_out(null);
                 }
             } else {
                 ShowDial();
@@ -9791,7 +9884,7 @@ function UpdateBuddyList(){
         console.warn("You have no buddies, will show the Dial Screen rather");
         if(UiCustomDialButton == true){
             if(typeof web_hook_dial_out !== 'undefined') {
-                web_hook_dial_out(null);
+                // web_hook_dial_out(null);
             }
         } else {
             ShowDial();
@@ -11150,26 +11243,26 @@ function ShowMessageMenu(obj, typeStr, cdrId, buddy) {
                     // CallDirection: "outbound"
                     // CallEnd: "2020-06-22 09:47:54 UTC"
                     // CdrId: "15928192748351E9D"
-                    // ConfCalls: [{…}]
+                    // ConfCalls: [{â¦}]
                     // Dst: "*65"
                     // DstUserId: "15919450411467CC"
-                    // Holds: [{…}]
+                    // Holds: [{â¦}]
                     // ItemDate: "2020-06-22 09:47:50 UTC"
                     // ItemType: "CDR"
                     // MessageData: null
-                    // Mutes: [{…}]
-                    // QOS: [{…}]
+                    // Mutes: [{â¦}]
+                    // QOS: [{â¦}]
                     // ReasonCode: 16
                     // ReasonText: "Normal Call clearing"
-                    // Recordings: [{…}]
+                    // Recordings: [{â¦}]
                     // RingTime: 2.374
                     // SessionId: "67sv8o86msa7df23"
                     // Src: "<100> Conrad de Wet"
                     // SrcUserId: "17186D5983F"
-                    // Tags: [{…}]
+                    // Tags: [{â¦}]
                     // Terminate: "us"
                     // TotalDuration: 4.835
-                    // Transfers: [{…}]
+                    // Transfers: [{â¦}]
                     // WithVideo: false
 
                     var CallDate = moment.utc(cdr.ItemDate.replace(" UTC", "")).local().format(DisplayDateFormat +" "+ DisplayTimeFormat);
@@ -11598,7 +11691,7 @@ function TagFocus(obj){
 function AddMenu(obj, buddy){
     if(UiCustomMessageAction){
         if(typeof web_hook_on_message_action !== 'undefined') {
-            web_hook_on_message_action(buddy, obj);
+            // web_hook_on_message_action(buddy, obj);
         }
         return;
     }
@@ -11645,7 +11738,7 @@ function ShowEmojiBar(buddy){
 
     var menuBar = $("<div/>");
     menuBar.prop("class", "emojiButton")
-    var emojis = ["😀","😁","😂","😃","😄","😅","😆","😇","😈","😉","😊","😋","😌","😍","😎","😏","😐","😑","😒","😓","😔","😕","😖","😗","😘","😙","😚","😛","😜","😝","😞","😟","😠","😡","😢","😣","😤","😥","😦","😧","😨","😩","😪","😫","😬","😭","😮","😯","😰","😱","😲","😳","😴","😵","😶","😷","🙁","🙂","🙃","🙄","🤐","🤑","🤒","🤓","🤔","🤕","🤠","🤡","🤢","🤣","🤤","🤥","🤧","🤨","🤩","🤪","🤫","🤬","🤭","🤮","🤯","🧐"];
+    var emojis = ["ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð","ð ","ð¡","ð¢","ð£","ð¤","ð¥","ð¦","ð§","ð¨","ð©","ðª","ð«","ð¬","ð­","ð®","ð¯","ð°","ð±","ð²","ð³","ð´","ðµ","ð¶","ð·","ð","ð","ð","ð","ð¤","ð¤","ð¤","ð¤","ð¤","ð¤","ð¤ ","ð¤¡","ð¤¢","ð¤£","ð¤¤","ð¤¥","ð¤§","ð¤¨","ð¤©","ð¤ª","ð¤«","ð¤¬","ð¤­","ð¤®","ð¤¯","ð§"];
     $.each(emojis, function(i,e){
         var emoji = $("<button>");
         emoji.html(e);
@@ -12839,7 +12932,7 @@ function ToggleDoNoDisturb(){
         $("#dndStatus").html("");
         // Web Hook
         if(typeof web_hook_disable_dnd !== 'undefined') {
-            web_hook_disable_dnd();
+           // web_hook_disable_dnd();
         }
     } else {
         // Enable DND
@@ -12851,7 +12944,7 @@ function ToggleDoNoDisturb(){
 
         // Web Hook
         if(typeof web_hook_enable_dnd !== 'undefined') {
-            web_hook_enable_dnd();
+           // web_hook_enable_dnd();
         }
     }
     console.log("DoNotDisturb", DoNotDisturbEnabled);
@@ -12884,7 +12977,7 @@ function ToggleRecordAllCalls(){
 function ChangeSettings(lineNum, obj){
     if(UiCustomMediaSettings){
         if(typeof web_hook_on_edit_media !== 'undefined') {
-            web_hook_on_edit_media(lineNum, obj);
+            //web_hook_on_edit_media(lineNum, obj);
         }
         return;
     }
@@ -13292,12 +13385,12 @@ function ReformatMessage(str) {
     msg = msg.replace(/(:\)|:\-\)|:o\))/g, String.fromCodePoint(0x1F642));     // :) :-) :o)
     msg = msg.replace(/(:\(|:\-\(|:o\()/g, String.fromCodePoint(0x1F641));     // :( :-( :o(
     msg = msg.replace(/(;\)|;\-\)|;o\))/g, String.fromCodePoint(0x1F609));     // ;) ;-) ;o)
-    msg = msg.replace(/(:'\(|:'\-\()/g, String.fromCodePoint(0x1F62A));        // :'( :'‑(
-    msg = msg.replace(/(:'\(|:'\-\()/g, String.fromCodePoint(0x1F602));        // :') :'‑)
+    msg = msg.replace(/(:'\(|:'\-\()/g, String.fromCodePoint(0x1F62A));        // :'( :'â(
+    msg = msg.replace(/(:'\(|:'\-\()/g, String.fromCodePoint(0x1F602));        // :') :'â)
     msg = msg.replace(/(:\$)/g, String.fromCodePoint(0x1F633));                // :$
     msg = msg.replace(/(>:\()/g, String.fromCodePoint(0x1F623));               // >:(
-    msg = msg.replace(/(:\×)/g, String.fromCodePoint(0x1F618));                // :×
-    msg = msg.replace(/(:\O|:\‑O)/g, String.fromCodePoint(0x1F632));             // :O :‑O
+    msg = msg.replace(/(:\Ã)/g, String.fromCodePoint(0x1F618));                // :Ã
+    msg = msg.replace(/(:\O|:\âO)/g, String.fromCodePoint(0x1F632));             // :O :âO
     msg = msg.replace(/(:P|:\-P|:p|:\-p)/g, String.fromCodePoint(0x1F61B));      // :P :-P :p :-p
     msg = msg.replace(/(;P|;\-P|;p|;\-p)/g, String.fromCodePoint(0x1F61C));      // ;P ;-P ;p ;-p
     msg = msg.replace(/(:D|:\-D)/g, String.fromCodePoint(0x1F60D));             // :D :-D
@@ -15291,154 +15384,83 @@ var reconnectXmpp = function(){
 }
 
 /** =======================	GRUPO RYD  ========================= */
-
-// --- Hook para reflejar cambios de IndexedDB en MySQL ---
-function enableIndexedDBSync(apiBaseUrl) {
-  const openRequest = indexedDB.open;
-
-  indexedDB.open = function (name, version) {
-    const req = openRequest.apply(this, arguments);
-
-    req.addEventListener("success", () => {
-      const db = req.result;
-
-      for (const storeName of db.objectStoreNames) {
-        const tx = db.transaction(storeName, "readwrite");
-        const store = tx.objectStore(storeName);
-
-        // Interceptar add/put
-        ["add", "put"].forEach((method) => {
-          const original = store[method];
-          store[method] = function (value, key) {
-            const request = original.apply(this, arguments);
-
-            request.onsuccess = () => {
-              syncSingleRecord(apiBaseUrl, storeName, value);
-            };
-
-            return request;
-          };
-        });
-
-        // Interceptar delete
-        const originalDelete = store.delete;
-        store.delete = function (key) {
-          const request = originalDelete.apply(this, arguments);
-          request.onsuccess = () => {
-            fetch(`${apiBaseUrl}/delete_record.php`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ store: storeName, key }),
-            });
-          };
-          return request;
-        };
-      }
-    });
-
-    return req;
-  };
-}
-
-// --- Enviar un solo registro al servidor ---
-async function syncSingleRecord(apiBaseUrl, storeName, record) {
-  if (storeName === "CallRecordings") {
-    const formData = new FormData();
-    formData.append("call_id", record.callId || "");
-    formData.append("file", record.blob, record.filename || "recording.webm");
-    formData.append("mime", record.blob.type || "application/octet-stream");
-
-    await fetch(`${apiBaseUrl}/save_recording.php`, {
-      method: "POST",
-      body: formData,
-    });
-  } else if (storeName === "CallQosData") {
-    await fetch(`${apiBaseUrl}/save_qos.php`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify([record]), // mando como array de 1
-    });
-  }
-
-  console.log(`? Registro de ${storeName} sincronizado`);
-}
-
-// --- Activar el sincronizador ---
-// Reemplaza con la URL real de tu backend PHP
-enableIndexedDBSync("https://pbx.ryd/api/");
-
-
-async function cargarInternos() {
-      try {
-        const res = await fetch(apiInternos);
-        const data = await res.json();
-
-        const select = document.getElementById("interno");
-        select.innerHTML = "";
-
-        data.forEach(ext => {
-          if (ext.status !== "unknown") {
-            const opt = document.createElement("option");
-            opt.value = ext.extension;
-            opt.textContent = `${ext.extension}`;
-            select.appendChild(opt);
-          }
-        });
-
-      } catch (err) {
-        document.getElementById("resultado").textContent = "Error cargando internos: " + err;
-      }
-    }
-
-async function registrarAgente() {
-  const usuario = document.getElementById("usuario").value;
-  const nombre = document.getElementById("nombre").value;
-  const numeroAgente = document.getElementById("agente").value;
-  const interno = document.getElementById("interno").value;
-
-  const payload = {
-    nombre_usuario: nombre,
-    usuario_crm: usuario,
-    numero_agente: numeroAgente,
-    interno_seleccionado: interno
-  };
-
-  localDB.setItem("wssServer", 'pbx.ryd');
-  localDB.setItem("WebSocketPort", '8089');
-  localDB.setItem("ServerPath", '/ws');
-  localDB.setItem("profileName", nombre);
-  localDB.setItem("SipDomain", 'pbx.ryd');
-  localDB.setItem("SipUsername", interno);
-  localDB.setItem("SipPassword", interno+'PSW');
-
-  RefreshRegistration();
-  window.location.href = "https://pbx.ryd/desaRYD/index.html"; // URL de destino
-}
-
-async function cargarInternos_00() {
+async function getEndpoint() {
   try {
     const res = await fetch(apiInternos);
     const data = await res.json();
-
-    // Filtramos solo los internos v�lidos y formateamos los datos
-    const internos = data
-      .filter(ext => ext.status !== "unknown")
-      .map(ext => ({
-        extension: ext.extension,
-      }));
-
-     console.log(internos);
+    console.log(data);
     // ?? Retorna el JSON directamente
-    return JSON.stringify(internos);
+    return JSON.stringify(data);
 
   } catch (err) {
-    // En caso de error, tambi�n devuelve un JSON
+    // En caso de error, también devuelve un JSON
     return JSON.stringify({
       error: "Error cargando internos",
       detalle: err.message
     });
   }
 }
+function reloadOnce() {
+  if (!sessionStorage.getItem("reloaded")) {
+    sessionStorage.setItem("reloaded", "true");
+    InitUi();
+    UpdateUI();
+    InitUi();
+    window.location.reload();
+  } else {
+    console.log("Se recargo el telefono .");
+  }
+}
+//===============================================================================
+function reportCallEvent(event,tipo) {
+  const payload = {
+  
+    ts: new Date().toISOString(),
+    payload: {
+	evento: event,
+	callId: HookcallerID,
+	servicio:idQueue ,
+	usuario: profileName,
+	idusuario: idUsuario,
+	agente: idAgent,
+	tipo: tipo,
+	origen: HookcallerID+"-"+Hookdid,
+	destino:SipUsername
+
+    }
+  };
+  fetch("https://pbx.ryd:5001/api/Hook/call", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).catch(err => console.error("--> Error reportando evento de llamada:", err));
+}
+//============================================================================================
+window.RecreateUserAgent = function () {
+   
+	if (phoneOptions.rolCRM === "agente") {
+		UpdateUILogin();
+	}
+	else{
+		CreateUserAgent();
+		Register(); 
+	}
+ 
+};
+//============================================================================================
+async function UpdateUILogin(){
+	CreateUserAgent();
+	//Register();  
+	window.location.reload()
+	//Unregister();
+ 	$("#dereglink").on('click', Unregister);
+   
+}
+
+
+
+
+
 
 
 

@@ -31,6 +31,29 @@ async function sendWebhook(event, payload, attempt = 1) {
     console.warn("Webhook error:", e);
   }
 }
+//===================================
+async function sendWebhook1(event, payload, attempt = 1) {
+  const body = JSON.stringify({ event, ts: new Date().toISOString(), payload });
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), WEBHOOK_TIMEOUT_MS);
+    const res = await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Webhook-Secret": WEBHOOK_SECRET
+      },
+      body,
+      signal: ctrl.signal,
+      keepalive: true
+    });
+    clearTimeout(timer);
+    if (!res.ok && attempt < 3) return sendWebhook(event, payload, attempt + 1);
+  } catch (e) {
+    if (attempt < 3) return sendWebhook(event, payload, attempt + 1);
+    console.warn("Webhook error:", e);
+  }
+}
 
 // ==========================
 // Helpers
@@ -105,7 +128,7 @@ window.web_hook_on_invite = (session) =>
   sendWebhook("call.ringing", sessionSnapshot(session));
 
 window.web_hook_on_answered = (session) => 
-  sendWebhook("call.answered",sessionSnapshot(session)); 
+  sendWebhook("call.answered",session); 
 
 
 window.web_hook_on_terminate = (session) =>
