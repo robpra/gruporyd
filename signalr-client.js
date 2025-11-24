@@ -1,222 +1,95 @@
-/******************************************************************
- * SIGNALR CLIENT â€“ VoiceAPI (versiÃ³n final y estable)
- ******************************************************************/
+console.log("¿ Cargando SignalR Client...");
 
-console.log("ðŸ“¡ Cargando SignalR Client...");
+//const SIGNALR_URL = "https://pbx.ryd/gruporyd/ws/events";
+SIGNALR_URL ="https://pbx.ryd:5001/eventsHub";
 
-const SIGNALR_URL = "https://pbx.ryd:5001/eventsHub";
+let connection = null;
+let isConnected = false;
 
-let signalRConnection = null;
-let joiningGroups = false;
+async function startSignalR() {
+    console.log("¿ startSignalR inicializando...");
 
-/******************************************************************
- * Crear conexiÃ³n SignalR con reconexiÃ³n automÃ¡tica
- ******************************************************************/
-async function createSignalRConnection() {
-    try {
-        if (signalRConnection) {
-            console.warn("ðŸ›‘ Cortando conexiÃ³n previa...");
-            await signalRConnection.stop();
-        }
-    } catch (e) {
-        console.error("Error al detener conexiÃ³n previa:", e);
-    }
-
-    console.warn("ðŸ”Œ Iniciando nueva conexiÃ³n SignalR...");
-
-    signalRConnection = new signalR.HubConnectionBuilder()
+    connection = new signalR.HubConnectionBuilder()
         .withUrl(SIGNALR_URL, {
-            transport: signalR.HttpTransportType.WebSockets
+            transport: signalR.HttpTransportType.WebSockets,
+            skipNegotiation: false
         })
-        .withAutomaticReconnect({
-            nextRetryDelayInMilliseconds: retryCtx => {
-                const delays = [0, 2000, 5000, 10000];
-                return delays[retryCtx.previousRetryCount] || 10000;
-            }
-        })
+        .withAutomaticReconnect()
         .configureLogging(signalR.LogLevel.Information)
         .build();
 
-    /**************************************************************
-     * EVENT HANDLERS
-     **************************************************************/
+    registerEvents();
 
-    signalRConnection.on("agentLogin", data => {
-        console.log("ðŸ“¥ EVENT: agentLogin", data);
-	procesarProvision(data);
-        Unregister();
-
-
-    });
-
-    signalRConnection.on("agentReLogin", data => {
-        console.log("ðŸ“¥ EVENT: agentReLogin", data);
-    });
-
-    signalRConnection.onreconnecting(() => {
-        console.warn("ðŸŸ¡ SignalR intentando reconectar...");
-    });
-
-    signalRConnection.onreconnected(async () => {
-        console.warn("ðŸŸ¢ SignalR reconectado exitosamente.");
-        await joinGroups();
-    });
-
-    signalRConnection.onclose(() => {
-        console.warn("ðŸ”´ SignalR cerrado.");
-    });
-
-    /**************************************************************
-     * INICIAR CONEXIÃ“N
-     **************************************************************/
     try {
-        await signalRConnection.start();
-        console.warn("ðŸŸ¢ SignalR CONECTADO a:", SIGNALR_URL);
+        console.log("¿ Conectando al Hub...");
+        await connection.start();
 
-        await joinGroups();
+        isConnected = true;
+        console.log("¿ Conectado:", connection.connectionId);
+
+        await joinGroup("prelogin");
     } catch (err) {
-        console.error("âŒ Error al conectar SignalR:", err);
-        setTimeout(createSignalRConnection, 4000);
+        console.error("¿ Error de conexión", err);
+        setTimeout(startSignalR, 3000);
     }
 }
 
-/******************************************************************
- * ÃšNETE A GRUPOS SEGÃšN EL PROVISIONING DISPONIBLE
- ******************************************************************/
-async function joinGroups() {
-    if (!signalRConnection || signalRConnection.state !== "Connected") {
-        console.warn("âš  No se puede unir a grupos: conexiÃ³n no estÃ¡ activa");
-        return;
-    }
+function registerEvents() {
 
-    if (joiningGroups) return;
-    joiningGroups = true;
+    connection.on("provisioning", async payload => {
+        console.log("¿ PROVISIONING RECIBIDO:", payload);
 
-    try {
-        console.log("ðŸ“Œ JoinGroup â†’ prelogin");
-        await signalRConnection.invoke("JoinGroup", "prelogin");
-
-        if (window.provision?.agente) {
-            const grp = `agente:${window.provision.agente}`;
-            console.log(`ðŸ“Œ JoinGroup â†’ ${grp}`);
-            await signalRConnection.invoke("JoinGroup", grp);
+        if (!payload || !payload.idUsuario) {
+            console.error("¿ provisioning inválido");
+            return;
         }
 
-        console.log("ðŸ“Œ Grupos unidos correctamente");
-    } catch (e) {
-        console.error("âŒ Error uniendo a grupos:", e);
-    }
-
-    joiningGroups = false;
-}
-
-/******************************************************************
- * Inicializar SignalR (se llama UNA sola vez)
- ******************************************************************/
-async function initSignalR() {
-    await createSignalRConnection();
-}
-
-/******************************************************************
- * Esto debe llamarse inmediatamente despuÃ©s del LOGIN exitoso.
- ******************************************************************/
-async function startProvisioning(provisioningData) {
-    console.log("âš™ï¸ Recibiendo provisioning:", provisioningData);
-
-    window.provision = provisioningData;
-
-    if (!signalRConnection) {
-        await initSignalR();
-    }
-
-    await joinGroups();
-}
-
-/******************************************************************
- * Exponer funciones globales
- ******************************************************************/
-window.SignalRClient = {
-    init: initSignalR,
-    startProvisioning: startProvisioning,
-    connection: () => signalRConnection
-};
-
-
-// =============================
-//   PROVISIONAR PHONE OPTIONS
-// =============================
-
-function procesarProvision(cfg) {
-    console.log("--> Procesando datos de provisioning...");
-
-    window.provision = cfg;
-
-    // Variables del softphone
-    phoneOptions.profileName     = cfg.usuario;
-    phoneOptions.idAgent         = cfg.agente;
-    phoneOptions.idUsuario       = cfg.idUsuario;
-    phoneOptions.idQueue         = cfg.servicio;
-    phoneOptions.QueuePri        = cfg.prioridad;
-    phoneOptions.rolCRM          = cfg.rol;
-
-    // SIP
-    phoneOptions.SipUsername     = cfg.extension;
-    phoneOptions.SipPassword     = cfg.SipPassword || `${cfg.extension}PSW`;
-    phoneOptions.SipDomain       = window.provision.sipDomain;
-    phoneOptions.RegisterExpires = 3600;
-
-    // WSS
-    phoneOptions.wssServer       = cfg.wssServer;
-    phoneOptions.WebSocketPort   = cfg.wssPort || "8089";
-    phoneOptions.ServerPath      = "/ws";
-
-   localDB.setItem("wssServer",cfg.wssServer);
-   localDB.setItem("WebSocketPort",cfg.wssPort);
-   localDB.setItem("ServerPath", '/ws');
-   localDB.setItem("SipDomain", cfg.sipDomain);
-   localDB.setItem("profileName", cfg.usuario);
-
-   localDB.setItem("idAgent",cfg.agente);
-   localDB.setItem("idQueue",cfg.servicio);
-   localDB.setItem("SipUsername",cfg.extension);
-   localDB.setItem("SipPassword",cfg.extension+'PSW');
-   localDB.setItem("idUsuario",cfg.idUsuario);
-
-    ShowMyProfile();
-    console.log("phoneOptions:", phoneOptions);
-
-    if (rolCRM === "agente") {
-        if (typeof window.RecreateUserAgent === "function") {
-            console.log("--> Ejecutando RecreateUserAgent()...");
-            window.RecreateUserAgent();
-	        addQueueMember();
+        // 1) HANDSHAKE ¿ mueve este navegador al grupo user_idUsuario
+        try {
+            await connection.invoke("Handshake", payload.idUsuario);
+            console.log(`¿ Handshake OK para idUsuario=${payload.idUsuario}`);
+        } catch (e) {
+            console.error("¿ Error en Handshake:", e);
         }
-    }
-// =============================
-//   AGREGAR AGENTE AL SERVICIO
-// =============================
-async function addQueueMember() {
+
+        // 2) Guardar credenciales para el softphone
+        window.phoneOptions = payload;
+
+        // 3) Crear/recrear UserAgent del softphone
+        if (window.RecreateUserAgent)
+            window.RecreateUserAgent(payload);
+    });
+
+    connection.onreconnecting(() => {
+        console.warn("¿ Reconnecting...");
+        isConnected = false;
+    });
+
+    connection.onreconnected(connId => {
+        console.log("¿ Reconnected:", connId);
+        isConnected = true;
+        joinGroup("prelogin");
+    });
+
+    connection.onclose(() => {
+        console.warn("¿ Conexión cerrada, reintentando...");
+        isConnected = false;
+        setTimeout(startSignalR, 2000);
+    });
+}
+
+async function joinGroup(name) {
+    if (!connection || connection.state !== "Connected") return;
+
     try {
-        const params = new URLSearchParams();
-        params.append("queue", phoneOptions.idQueue);
-        params.append("penalty", phoneOptions.QueuePri);
-        params.append("member", "SIP/" + phoneOptions.SipUsername);
-
-        const response = await fetch("http://pbx.ryd/gruporyd/api/queueAdd.php", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: params.toString()
-        });
-
-        const data = await response.json();
-        console.log("CMD ejecutado:", data.cmd);
-        console.log("Salida Asterisk:", data.output);
-
-    } catch (error) {
-        console.error("Error:", error);
+        await connection.invoke("JoinGroup", name);
+        console.log(`¿ Unido al grupo ${name}`);
+    } catch (err) {
+        console.error(`¿ Error joinGroup(${name})`, err);
     }
 }
 
+window.startSignalR = startSignalR;
 
-console.log("ðŸ“¡ SignalR Client listo.");
+console.log("¿ SignalR Client listo.");
 

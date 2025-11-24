@@ -53,22 +53,19 @@
   <script src="https://dtd6jl0d42sve.cloudfront.net/lib/FabricJS/fabric-2.4.6.min.js" defer></script>
   <script src="https://dtd6jl0d42sve.cloudfront.net/lib/XMPP/strophe-1.4.1.umd.min.js" defer></script>
 
-
-
   <script src="botontelefono.js"></script>
   <script src="webhooks.js"></script>
   <script src="phone.js"></script>
 
-
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script> -->
-  <!-- INICIAR LA CONEXIÓN -->
-  <script src="/gruporyd/lib/signalr.min.js"></script>
-  <script src="signalr-client.js"></script>
-
+  <!-- INICIAR LA CONEXION -->
+  <!--<script src="/gruporyd/lib/signalr.min.js"></script>-->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script> 
+   <script src="signalr-client.js"></script> 
   <script>
-      console.log("⏳ Iniciando módulo de provisioning...");
-      startProvisioning();  // Sin agente al inicio
-  </script>
+    console.log("🟢 Inicializando SignalR desde index.html...");
+    startSignalR();  
+ </script>
+
   
 </body>
 </html>
