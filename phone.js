@@ -1811,7 +1811,7 @@ function ShowMyProfileMenu(obj){
             HidePopup();
             if(id == "1") {
 		if ( confirm(lang.reload_required) ) {
-    		    window.location.reload();
+    		   window.location.reload();
                }
 	    }	
             if(id == "2") {
@@ -15400,17 +15400,6 @@ async function getEndpoint() {
     });
   }
 }
-function reloadOnce() {
-  if (!sessionStorage.getItem("reloaded")) {
-    sessionStorage.setItem("reloaded", "true");
-    InitUi();
-    UpdateUI();
-    InitUi();
-    window.location.reload();
-  } else {
-    console.log("Se recargo el telefono .");
-  }
-}
 //===============================================================================
 function reportCallEvent(event,tipo) {
   const payload = {
@@ -15436,26 +15425,193 @@ function reportCallEvent(event,tipo) {
   }).catch(err => console.error("--> Error reportando evento de llamada:", err));
 }
 //============================================================================================
-window.RecreateUserAgent = function () {
-   
-	if (phoneOptions.rolCRM === "agente") {
-		UpdateUILogin();
-	}
-	else{
-		CreateUserAgent();
-		Register(); 
-	}
- 
-};
-//============================================================================================
-async function UpdateUILogin(){
-	CreateUserAgent();
-	//Register();  
-	window.location.reload()
-	//Unregister();
- 	$("#dereglink").on('click', Unregister);
-   
+async function addUserAgentCC(){
+    console.log("?? addUserAgentCC ejecutado sin reload");
+    await addQueueMember();
+    InitUi();
+    UpdateUI();
 }
+//============================================================================================
+async function addQueueMember() {
+    try {
+        const params = new URLSearchParams();
+        params.append("queue", phoneOptions.idQueue);
+        params.append("penalty", phoneOptions.QueuePri);
+        params.append("member", "SIP/" + phoneOptions.SipUsername);
+
+	console.log("?? addQueueMember ? parámetros:", {
+   		queue: phoneOptions.idQueue,
+    		penalty: phoneOptions.QueuePri,
+   		member: "SIP/" + phoneOptions.SipUsername
+	});
+
+        const response = await fetch("https://pbx.ryd/gruporyd/api/queueAdd.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params.toString()
+        });
+	sleep(1);
+        const data = await response.json();
+        console.log("CMD ejecutado:", data.cmd);
+        console.log("Salida Asterisk:", data.output);
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+console.log("?? Davinci --> Client listo pero en estado READY.");
+// ======================================================================
+//  RecreateUserAgent(cfg)
+//  -> Se llama cuando llega provisioning desde SignalR
+//  -> Obtiene interno ARI, arma phoneOptions y registra el UA
+// ======================================================================
+
+window.RecreateUserAgent = async function (cfg) {
+
+    console.log("?? RecreateUserAgent(): iniciando con cfg:", cfg);
+
+    let jsonText;
+    try {
+        jsonText = await getEndpoint();
+    } catch (e) {
+        console.error("? Error ejecutando getEndpoint():", e);
+        return;
+    }
+
+    let data;
+    try {
+        data = JSON.parse(jsonText);
+    } catch (e) {
+        console.error("? getEndpoint() devolvió JSON inválido:", jsonText);
+        return;
+    }
+
+    const resource = data.resource;
+    if (!resource) {
+        console.error("? ARI devolvió resource vacío. No se puede registrar.");
+        return;
+    }
+
+    console.log("?? Interno ARI asignado (resource):", resource);
+
+    // Configuración
+    phoneOptions.profileName     = cfg.usuario;
+    phoneOptions.idAgent         = cfg.idAgente;
+    phoneOptions.idUsuario       = cfg.idUsuario;
+    phoneOptions.idQueue         = cfg.servicio;
+    phoneOptions.QueuePri        = cfg.prioridad || 1;
+    phoneOptions.rolCRM          = cfg.rol;
+
+    phoneOptions.SipUsername     = resource;
+    phoneOptions.SipPassword     = `${resource}PSW`;
+    phoneOptions.SipDomain       = cfg.host;
+
+    phoneOptions.wssServer       = cfg.host;
+    phoneOptions.WebSocketPort   = cfg.wssPort || "8089";
+    phoneOptions.ServerPath      = "/ws";
+    phoneOptions.RegisterExpires = 3600;
+
+    console.log("?? phoneOptions configurado:", phoneOptions);
+
+    // Persistir
+    localDB.setItem("profileName", cfg.usuario);
+    localDB.setItem("idAgent", cfg.idAgente);
+    localDB.setItem("idQueue", cfg.servicio);
+    localDB.setItem("idUsuario", cfg.idUsuario);
+
+    localDB.setItem("SipUsername", resource);
+    localDB.setItem("SipPassword", `${resource}PSW`);
+    localDB.setItem("SipDomain", cfg.host);
+
+    localDB.setItem("wssServer", cfg.host);
+    localDB.setItem("WebSocketPort", "8089");
+    localDB.setItem("ServerPath", "/ws");
+
+    // Crear UA
+    try {
+        console.log("?? Creando UserAgent...");
+        CreateUserAgent();
+    } catch (e) {
+        console.error("? Error en CreateUserAgent():", e);
+        return;
+    }
+
+    // Registrar SIP
+    try {
+        console.log("?? Enviando REGISTER...");
+        Register();
+    } catch (e) {
+        console.error("? Error en Register():", e);
+        return;
+    }
+	
+	
+	window.location.reload();
+
+    // Añadir a cola
+    try {
+        if (resource !== "") {
+            console.log("?? addQueueMember() ejecutando...");
+            await addQueueMember();
+        }
+    } catch (e) {
+        console.error("? Error en addQueueMember():", e);
+    }
+
+    console.log("?? RecreateUserAgent COMPLETADO (sin reload).");
+
+    // REFRESCAR UI EN VEZ DE RECARGAR PÁGINA
+    if (typeof InitUi === "function") InitUi();
+    if (typeof UpdateUI === "function") UpdateUI();
+};
+
+
+
+// ======================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,95 +1,130 @@
-console.log("¿ Cargando SignalR Client...");
+/* ============================================================
+   SIGNALR CLIENT â€“ VersiÃ³n Limpia + Join AutomÃ¡tico de Agente
+   ============================================================ */
 
-//const SIGNALR_URL = "https://pbx.ryd/gruporyd/ws/events";
-SIGNALR_URL ="https://pbx.ryd:5001/eventsHub";
+console.log("ðŸ“¡ Cargando SignalR Client...");
 
 let connection = null;
-let isConnected = false;
+let instanceId = null;
 
-async function startSignalR() {
-    console.log("¿ startSignalR inicializando...");
+/* ============================================================
+   GENERAR INSTANCE ID ÃšNICO PARA CADA PESTAÃ‘A
+   ============================================================ */
+function generateInstanceId() {
+    const ms = Date.now();
+    const rnd = Math.floor(Math.random() * 999999);
+    return `${ms}-${rnd}`;
+}
+
+/* ============================================================
+   INICIAR CONEXIÃ“N
+   ============================================================ */
+async function StartSignalR() {
+
+    console.log("---- Inicializando SignalR ----");
+
+    instanceId = generateInstanceId();
+
+    console.log("Instance ID:", instanceId);
+
+    const baseUrl = `${window.location.protocol}//${window.location.host}/gruporyd`;
 
     connection = new signalR.HubConnectionBuilder()
-        .withUrl(SIGNALR_URL, {
-            transport: signalR.HttpTransportType.WebSockets,
-            skipNegotiation: false
-        })
-        .withAutomaticReconnect()
+        .withUrl(`${baseUrl}/eventsHub?instanceId=${instanceId}`)
         .configureLogging(signalR.LogLevel.Information)
         .build();
 
-    registerEvents();
+    console.log("Conectando a:", `${baseUrl}/eventsHub`);
 
     try {
-        console.log("¿ Conectando al Hub...");
         await connection.start();
+        console.log("âœ“ SignalR conectado:", connection.connectionId);
 
-        isConnected = true;
-        console.log("¿ Conectado:", connection.connectionId);
+        // ====================================================
+        // UNIRSE AL GRUPO CORRECTO
+        // ====================================================
+        const idAgente = localStorage.getItem("idAgente");
 
-        await joinGroup("prelogin");
+        if (idAgente && idAgente !== "" && idAgente !== "null") {
+            await connection.invoke("JoinGroup", `AGENTE_${idAgente}`);
+            console.log(`â†’ JoinGroup directo: AGENTE_${idAgente}`);
+        } else {
+            await connection.invoke("JoinGroup", "prelogin");
+            console.log("â†’ JoinGroup en modo prelogin");
+        }
+
     } catch (err) {
-        console.error("¿ Error de conexión", err);
-        setTimeout(startSignalR, 3000);
+        console.error("âŒ Error al conectar con SignalR:", err);
+        console.log("Intentando reconectar en 2 segundos...");
+        setTimeout(StartSignalR, 2000);
+        return;
     }
+
+    RegisterHandlers();
 }
 
-function registerEvents() {
+/* ============================================================
+   RECONEXIÃ“N AUTOMÃTICA
+   ============================================================ */
+function RegisterHandlers() {
 
-    connection.on("provisioning", async payload => {
-        console.log("¿ PROVISIONING RECIBIDO:", payload);
+    // ---------------------------------------------------------
+    // Reconexion
+    // ---------------------------------------------------------
+    connection.onclose(async () => {
+        console.warn("âš  ConexiÃ³n perdida. Reintentando...");
+        setTimeout(StartSignalR, 2000);
+    });
 
-        if (!payload || !payload.idUsuario) {
-            console.error("¿ provisioning inválido");
+    // ---------------------------------------------------------
+    // HANDLER: PROVISIONING
+    // ---------------------------------------------------------
+    connection.on("provision", (data) => {
+        console.log("ðŸ“¨ Evento provisioning recibido:", data);
+
+        if (!data) {
+            console.error("âŒ provisioning vacÃ­o");
             return;
         }
 
-        // 1) HANDSHAKE ¿ mueve este navegador al grupo user_idUsuario
-        try {
-            await connection.invoke("Handshake", payload.idUsuario);
-            console.log(`¿ Handshake OK para idUsuario=${payload.idUsuario}`);
-        } catch (e) {
-            console.error("¿ Error en Handshake:", e);
+        // Guardar agente para que la prÃ³xima recarga conecte directo al grupo AGENTE_xxx
+        if (data.idAgente) {
+            localStorage.setItem("idAgente", data.idAgente);
         }
 
-        // 2) Guardar credenciales para el softphone
-        window.phoneOptions = payload;
-
-        // 3) Crear/recrear UserAgent del softphone
-        if (window.RecreateUserAgent)
-            window.RecreateUserAgent(payload);
+        if (window.RecreateUserAgent) {
+            window.RecreateUserAgent(data);
+        } else {
+            console.error("âš  RecreateUserAgent no estÃ¡ definido");
+        }
     });
 
-    connection.onreconnecting(() => {
-        console.warn("¿ Reconnecting...");
-        isConnected = false;
+    // ---------------------------------------------------------
+    // HANDLER: EVENTOS DE LLAMADAS
+    // ---------------------------------------------------------
+    connection.on("call.event", (event) => {
+        console.log("ðŸ“ž Evento de llamada recibido:", event);
+        if (window.OnCallEvent) {
+            window.OnCallEvent(event);
+        }
     });
 
-    connection.onreconnected(connId => {
-        console.log("¿ Reconnected:", connId);
-        isConnected = true;
-        joinGroup("prelogin");
-    });
-
-    connection.onclose(() => {
-        console.warn("¿ Conexión cerrada, reintentando...");
-        isConnected = false;
-        setTimeout(startSignalR, 2000);
+    // ---------------------------------------------------------
+    // HANDLER: EVENTOS DE AGENTE
+    // ---------------------------------------------------------
+    connection.on("agent.event", (event) => {
+        console.log("ðŸ‘¤ Evento de agente recibido:", event);
+        if (window.OnAgentEvent) {
+            window.OnAgentEvent(event);
+        }
     });
 }
 
-async function joinGroup(name) {
-    if (!connection || connection.state !== "Connected") return;
-
-    try {
-        await connection.invoke("JoinGroup", name);
-        console.log(`¿ Unido al grupo ${name}`);
-    } catch (err) {
-        console.error(`¿ Error joinGroup(${name})`, err);
-    }
-}
-
-window.startSignalR = startSignalR;
-
-console.log("¿ SignalR Client listo.");
+/* ============================================================
+   AUTO-INICIAR
+   ============================================================ */
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("ðŸ“¡ Iniciando SignalR desde signalr-client.jsâ€¦");
+    StartSignalR();
+});
 

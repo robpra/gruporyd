@@ -1,0 +1,90 @@
+/* ============================================================
+   SIGNALR CLIENT – VoiceAPI Provisioning + Hooks
+   ============================================================ */
+
+console.log("⚡ Cargando SignalR Client...");
+
+let conn = null;
+let instanceId = Date.now() + "-" + Math.floor(Math.random() * 999999);
+
+async function StartSignalR() {
+    try {
+        console.log("---- Inicializando SignalR ----");
+        console.log("Instance ID generado:", instanceId);
+
+        conn = new signalR.HubConnectionBuilder()
+            .withUrl("/gruporyd/eventsHub?instanceId=" + instanceId)
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        conn.onclose(() => {
+            console.error("❌ Conexión perdida. Reintentando...");
+            setTimeout(StartSignalR, 3000);
+        });
+
+        /* ============================================================
+           RECEPCIÓN DE PROVISIONING
+        ============================================================ */
+        conn.on("provision", async (payload) => {
+            console.log("📦 Provisioning recibido:", payload);
+
+            // Guardar datos globales
+            window.idAgente  = payload.idAgente;
+            window.idUsuario = payload.idUsuario;
+            window.idQueue   = payload.servicio;
+
+            window.SipUsername = payload.usuario;
+            window.SipPassword = payload.token;
+            window.sipDomain   = payload.sipDomain;
+            window.wssPort     = payload.wss;
+
+            window.ProvisioningData = payload;
+
+            // 🔥 Unirse al grupo correcto de agente
+            const group = "AGENTE_" + payload.idAgente;
+            console.log("👉 Suscribiendo al grupo:", group);
+
+            try {
+                await conn.invoke("JoinGroup", group);
+                console.log("🟢 JoinGroup OK");
+            } catch (e) {
+                console.error("❌ Error al unirse al grupo:", e);
+            }
+
+            // 🔄 Crear UserAgent SIP
+            if (window.RecreateUserAgent) {
+                console.log("🔄 Ejecutando RecreateUserAgent()");
+                window.RecreateUserAgent();
+            } else {
+                console.error("❌ RecreateUserAgent() no está definido");
+            }
+        });
+
+        /* ============================================================
+           HOOK EVENTS
+        ============================================================ */
+        conn.on("HookEvent", (eventData) => {
+            console.log("📞 HookEvent recibido:", eventData);
+            if (window.HandleHookEvent) {
+                window.HandleHookEvent(eventData);
+            }
+        });
+
+        /* ============================================================
+           Conectar al Hub
+        ============================================================ */
+        await conn.start();
+        console.log("🟢 SignalR conectado:", conn.connectionId);
+
+        // 🔥 SIEMPRE unirse al grupo prelogin
+        await conn.invoke("JoinGroup", "prelogin");
+        console.log("🟢 JoinGroup prelogin OK");
+
+    } catch (err) {
+        console.error("❌ Error en SignalR:", err);
+        setTimeout(StartSignalR, 3000);
+    }
+}
+
+window.StartSignalR = StartSignalR;
+

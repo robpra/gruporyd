@@ -22,51 +22,41 @@
         UiCustomMessageAction: true,
     };
   </script>
-
-
   <!-- ======== Moment.js ANTES que phone.js ======== -->
   <script src="https://dtd6jl0d42sve.cloudfront.net/lib/Moment/moment-with-locales-2.24.0.min.js"></script>
-
 </head>
 <body>
-
   <!-- === BOTON FLOTANTE === -->
   <button class="chat-toggler">
     <span class="material-icons">phone</span>
     <span class="material-icons close-icon">close</span>
   </button>
-
   <div class="chat-widget">
     <div class="chat-body">
       <div id="Phone"></div>
     </div>
   </div>
-
-  <!-- ======== LIBRERÍAS ======== -->
+  <!-- ======== LIBRERIAS ======== -->
   <script src="lib/jquery/jquery-3.6.1.min.js"></script>
   <script src="lib/jquery/jquery-ui-1.13.2.min.js"></script>
-
   <script src="https://dtd6jl0d42sve.cloudfront.net/lib/jquery/jquery.md5-min.js" defer></script>
   <script src="https://dtd6jl0d42sve.cloudfront.net/lib/Chart/Chart.bundle-2.7.2.min.js" defer></script>
   <script src="https://dtd6jl0d42sve.cloudfront.net/lib/SipJS/sip-0.20.0.min.js" defer></script>
   <script src="https://dtd6jl0d42sve.cloudfront.net/lib/Croppie/Croppie-2.6.4/croppie.min.js" defer></script>
   <script src="https://dtd6jl0d42sve.cloudfront.net/lib/FabricJS/fabric-2.4.6.min.js" defer></script>
   <script src="https://dtd6jl0d42sve.cloudfront.net/lib/XMPP/strophe-1.4.1.umd.min.js" defer></script>
-
   <script src="botontelefono.js"></script>
   <script src="webhooks.js"></script>
   <script src="phone.js"></script>
-
+  <script src="provisioning-handler.js"></script>
   <!-- INICIAR LA CONEXION -->
   <!--<script src="/gruporyd/lib/signalr.min.js"></script>-->
    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script> 
    <script src="signalr-client.js"></script> 
   <script>
-    console.log("🟢 Inicializando SignalR desde index.html...");
-    startSignalR();  
+    console.log("---> Inicializando SignalR desde index.html...");
+    StartSignalR(); 
  </script>
-
-  
 </body>
 </html>
 
